@@ -310,8 +310,10 @@ def insta_login(driver, myname, password):
                 break
 
     # ログイン用のxpath
-    input_username = "//input[@aria-label='電話番号、ユーザーネーム、メールアドレス']"
-    input_pw = "//input[@aria-label='パスワード']"
+    # input_username = "//input[@aria-label='電話番号、ユーザーネーム、またはメールアドレス']"
+    input_username = "username"
+    # input_pw = "//input[@aria-label='パスワード']"
+    input_pw = "password"
     btn_submit = "//button[@type='submit']"
     login_error = "//p[contains(text(),'入力されたユーザーネームはアカウントと一致しません') or contains(text(),'パスワードが間違っています')]"
  
@@ -355,13 +357,13 @@ def insta_login(driver, myname, password):
     
  
     try:
-        driver.find_element(By.XPATH, input_username).send_keys(myname)
+        driver.find_element(By.NAME, input_username).send_keys(myname)
     except:
         driver.find_elements(By.CSS_SELECTOR, "._2hvTZ.pexuQ.zyHYP")[0].send_keys(myname)
     time.sleep(2)
     
     try:
-        driver.find_element(By.XPATH, input_pw).send_keys(password)
+        driver.find_element(By.NAME, input_pw).send_keys(password)
     except:
         driver.find_elements(By.CSS_SELECTOR, "._2hvTZ.pexuQ.zyHYP")[1].send_keys(password)
     time.sleep(2)
@@ -1436,7 +1438,8 @@ if __name__ == '__main__':
 
     # webdriverを取得
     # stealth_mode=1 でステルスモードオン
-    driver = get_webdriver(stealth_mode=1, ostype="mac", use_profile=1)
+    # driver = get_webdriver(stealth_mode=1, ostype="mac", use_profile=1)
+    driver = get_webdriver(stealth_mode=1, ostype="win", use_profile=1)
 
     # 指定時間内にCounter_Maxの数だけランダム時間を生成
     wait_time = time_management(max_like_fol+400, interval)    
@@ -1530,7 +1533,7 @@ if __name__ == '__main__':
             
             # instagramへログイン
             insta_login(driver, myname, password)
-        except:        
+        except:
             traceback.print_exc()
 
             html = driver.page_source

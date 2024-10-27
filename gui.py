@@ -416,7 +416,7 @@ def get_setting():
             }
             }
 
-        with open('./insta2.json', 'w') as f:
+        with open('./insta2.json', 'w', encoding='utf-8') as f:
             json.dump(d, f, indent=4, ensure_ascii=False)
         
     # ボタンを作成
