@@ -299,7 +299,7 @@ def insta_login(driver, myname, password):
     """お知らせオンにするのアラートを閉じる"""
     def close_oshirase():
         for _ in range(5):
-            try:    # ログイン情報、お知らせがあればキャンセル。「後で」をクリック
+            try:    # ログイン情報、お知らせがあればキャンセル。「後で」をクリック // Close notifications, etc. Login information, cancel any notifications. Click "Later"
                 elem = driver.find_element(By.XPATH, btn_later)
                 try:
                     driver.execute_script('arguments[0].click();', elem)
@@ -310,8 +310,10 @@ def insta_login(driver, myname, password):
                 break
 
     # ログイン用のxpath
-    input_username = "//input[@aria-label='電話番号、ユーザーネーム、メールアドレス']"
-    input_pw = "//input[@aria-label='パスワード']"
+    # input_username = "//input[@aria-label='電話番号、ユーザーネーム、またはメールアドレス']"
+    input_username = "username"
+    # input_pw = "//input[@aria-label='パスワード']"
+    input_pw = "password"
     btn_submit = "//button[@type='submit']"
     login_error = "//p[contains(text(),'入力されたユーザーネームはアカウントと一致しません') or contains(text(),'パスワードが間違っています')]"
  
@@ -324,6 +326,13 @@ def insta_login(driver, myname, password):
     insta_url = "https://www.instagram.com/"
 
     jump_url(driver, insta_url)
+
+    try:
+        driver.implicitly_wait(2)
+        driver.find_element(By.XPATH, setting_icon)
+        return
+    except TimeoutException:
+        pass
 
     # loginしていた場合はログアウトしてから再起動するように促す
     # 該当のアカウントか判別するのは、できなくはないが、仕様変更するたびにコードを書き換えるのは現実的ではない
@@ -355,13 +364,13 @@ def insta_login(driver, myname, password):
     
  
     try:
-        driver.find_element(By.XPATH, input_username).send_keys(myname)
+        driver.find_element(By.NAME, input_username).send_keys(myname)
     except:
         driver.find_elements(By.CSS_SELECTOR, "._2hvTZ.pexuQ.zyHYP")[0].send_keys(myname)
     time.sleep(2)
     
     try:
-        driver.find_element(By.XPATH, input_pw).send_keys(password)
+        driver.find_element(By.NAME, input_pw).send_keys(password)
     except:
         driver.find_elements(By.CSS_SELECTOR, "._2hvTZ.pexuQ.zyHYP")[1].send_keys(password)
     time.sleep(2)
@@ -551,9 +560,9 @@ def dm_init(driver):
     jump_url(driver, "https://www.instagram.com/direct/inbox/")
 
 
-    # お知らせ通知等のポップアップに対応する
+    # お知らせ通知等のポップアップに対応する // Supports pop-up notifications etc.
     for _ in range(5):
-        try:    # ログイン情報、お知らせがあればキャンセル
+        try:    # ログイン情報、お知らせがあればキャンセル // Login information for pop-up notifications, etc., and cancellation if there is a notification
             elem = driver.find_element(By.CSS_SELECTOR, ".aOOlW.HoLwm")
             try:
                 driver.execute_script('arguments[0].click();', elem)
@@ -574,7 +583,7 @@ def thank_you_dm(driver=None, max_tnk_dm=20, myname=None):
     dm_init(driver)
 
     dm_count = 0
-    for i in range(0,len(diff_list)):
+    for i in range(0, len(diff_list)):
 
         xpath = "//div/*[name()='svg' and starts-with(@aria-label, '新規メッセージ')]/../.."
         try:
@@ -762,7 +771,9 @@ def get_follower_from_notice(driver):
     ただし、過去取得済みのフォロワーは除く
     """
     FILE_NAME = "messaged_followers.txt"
-    FOLLOW_TEXT= "があなたをフォローしました。"
+    # FOLLOW_TEXT= "があなたをフォローしました。"
+    FOLLOW_TEXT = "フォローリクエスト"
+    APPROVE_TEXT = "承認する"
 
     print('---- お知らせからフォロワーのIDを取得します。 ----')
     now = datetime.datetime.now()
@@ -781,6 +792,22 @@ def get_follower_from_notice(driver):
         wait.until(EC.presence_of_element_located((By.XPATH, "//div[@data-pressable-container]")))
     time.sleep(random.randint(3,5))
 
+    try:
+        element = wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'フォローリクエスト')]")))
+    except TimeoutException:
+        return []
+
+
+    # Traverse up to the parent element with role="button"
+    parent = element
+    while parent is not None:
+        # Check if the parent has the attribute role='button'
+        if parent.get_attribute('role') == 'button':
+            parent.click()  # Click the button
+            break
+        # Move to the parent element
+        parent = parent.find_element(By.XPATH, '..')  # Go to the parent
+
     # 過去取得済みのフォロワーのリストを取得
     try:
         with open(FILE_NAME, 'r') as file:
@@ -790,15 +817,42 @@ def get_follower_from_notice(driver):
 
     # フォローしてくれた人の一覧を取得
     followers = []
-    elm_followers = driver.find_elements(By.XPATH, f"//span[contains(text(), '{FOLLOW_TEXT}')]")
-    for e in elm_followers:
-        i = e.text.find(FOLLOW_TEXT)
-        if i == -1:
-            continue
-        follower = e.text[:i].strip()
-        if follower not in saved_followers:
-            followers.append(follower)
-            print("@" + follower)
+    while True:
+        try:
+            # Find the div element that contains the APPROVE_TEXT and has role='button'
+            element = wait.until(EC.presence_of_element_located((By.XPATH, f"//div[contains(text(), '{APPROVE_TEXT}') and @role='button']")))
+            pp_element = element.find_element(By.XPATH, '..').find_element(By.XPATH, '..').find_element(By.XPATH, '..')
+            temp_element = pp_element.find_element(By.XPATH, "//*[@class='x7a106z x78zum5 xdt5ytf x1iyjqo2']").find_element(By.XPATH, ".//*")
+            text_element = temp_element.find_element(By.XPATH, ".//*")
+            follower = text_element.text.strip()
+            
+            if follower not in saved_followers:
+                followers.append(follower)
+                print("@" + follower)
+            
+            # Click the found element
+            element.click()
+            
+            # Optionally, wait a moment to allow for any changes on the page
+            wait.until(EC.staleness_of(element))  # Wait until the element is no longer attached to the DOM
+            time.sleep(random.randint(1,2))
+
+        except Exception as e:
+            # Break the loop if no such element is found
+            print("No more elements found to click or an error occurred:", e)
+            break
+
+    # フォローしてくれた人の一覧を取得
+    # followers = []
+    # elm_followers = driver.find_elements(By.XPATH, f"//span[contains(text(), '{APPROVE_TEXT}')]")
+    # for e in elm_followers:
+    #     i = e.text.find(FOLLOW_TEXT)
+    #     if i == -1:
+    #         continue
+    #     follower = e.text[:i].strip()
+    #     if follower not in saved_followers:
+    #         followers.append(follower)
+    #         print("@" + follower)
 
     # 今回出力されるフォロワーのリストを保存する
     with open(FILE_NAME, 'a') as file:
@@ -1436,7 +1490,8 @@ if __name__ == '__main__':
 
     # webdriverを取得
     # stealth_mode=1 でステルスモードオン
-    driver = get_webdriver(stealth_mode=1, ostype="mac", use_profile=1)
+    # driver = get_webdriver(stealth_mode=1, ostype="mac", use_profile=1)
+    driver = get_webdriver(stealth_mode=1, ostype="win", use_profile=1)
 
     # 指定時間内にCounter_Maxの数だけランダム時間を生成
     wait_time = time_management(max_like_fol+400, interval)    
@@ -1520,7 +1575,7 @@ if __name__ == '__main__':
             driver.switch_to.window(driver.window_handles[0])
 
             # n時間待つ
-            wait_minute = int(wait_hour * 60)
+            wait_minute = 1 #int(wait_hour * 60)
             for i in range(0,int(wait_minute)):
                 if (int(wait_minute)-i) % 60 == 0:
                     print(f"待機時間残り (Standby time remaining) {(int(wait_minute)-i) // 60}時間です。")
@@ -1530,7 +1585,7 @@ if __name__ == '__main__':
             
             # instagramへログイン
             insta_login(driver, myname, password)
-        except:        
+        except:
             traceback.print_exc()
 
             html = driver.page_source

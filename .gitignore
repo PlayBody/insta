@@ -1,1 +1,8 @@
 __pycache__
+.venv
+.vscode
+insta2.json
+messaged_followers.txt
+error.html
+error.png
+

@@ -15,7 +15,7 @@ def get_setting():
     taglist = ["相互フォロー", "相互フォロー", "相互フォロー"]
 
     try:
-        with open('./insta2.json') as f:
+        with open('./insta2.json', 'r', encoding='utf-8') as f:
             setting = json.load(f)
     except:
         setting = {
@@ -375,10 +375,10 @@ def get_setting():
         rm_interval = int(text12.get())
         flag["dm"] = int(flag["dm"].get())
         # TODO: 機能を一時的に無効化しているためOFFを設定
-        flag["rm"] = 0 #int(flag["rm"].get())
-        flag["lf"] = 0 #int(flag["lf"].get())
-        flag["ml"] = 0 #int(flag["ml"].get())
-        flag["ri"] = 0 #int(flag["ri"].get())
+        flag["rm"] = int(flag["rm"].get())
+        flag["lf"] = int(flag["lf"].get())
+        # flag["ml"] = 0 #int(flag["ml"].get())
+        flag["ri"] = int(flag["ri"].get())
         taglist[0] = text13.get()
         taglist[1] = text14.get()
         taglist[2] = text15.get()
@@ -416,7 +416,7 @@ def get_setting():
             }
             }
 
-        with open('./insta2.json', 'w') as f:
+        with open('./insta2.json', 'w', encoding='utf-8') as f:
             json.dump(d, f, indent=4, ensure_ascii=False)
         
     # ボタンを作成
