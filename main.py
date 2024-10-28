@@ -1364,6 +1364,9 @@ def auto_follow(driver: WebDriver):
             e_posts = driver.find_elements(By.XPATH, xpath_posts)
             for e in e_posts[:6]:
                 try:
+                    childs = e.find_elements(By.XPATH, ".//*")
+                    if len(childs) == 0:
+                        continue
                     # 投稿ダイアログを開く
                     # ActionChains(driver).move_to_element(e).perform()
                     e.click()
@@ -1578,7 +1581,7 @@ if __name__ == '__main__':
             driver.switch_to.window(driver.window_handles[0])
 
             # n時間待つ
-            wait_minute = 1 #int(wait_hour * 60)
+            wait_minute = int(wait_hour * 60)
             for i in range(0,int(wait_minute)):
                 if (int(wait_minute)-i) % 60 == 0:
                     print(f"待機時間残り (Standby time remaining) {(int(wait_minute)-i) // 60}時間です。")
