@@ -1332,7 +1332,7 @@ def auto_follow(driver: WebDriver):
     now = datetime.datetime.now()
     print("開始時刻: " + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
 
-    text_follow = "フォローする"
+    text_follow = "フォロー"
     text_following = "フォロー中"
     text_requested = "リクエスト済み"
 
@@ -1355,14 +1355,17 @@ def auto_follow(driver: WebDriver):
         try:
             # プロフィールを開く
             driver.get(f"https://www.instagram.com/{user}")
-            wait.until(EC.presence_of_element_located((By.XPATH, "//a[@href[starts-with(., '/p/')]]")))
+
+            xpath_posts = "//a[@role='link']"
+            # wait.until(EC.presence_of_element_located((By.XPATH, "//a[@href[starts-with(., '/p/')]]")))
+            wait.until(EC.presence_of_element_located((By.XPATH, xpath_posts)))
 
             # 投稿のリンクを取得
-            e_posts = driver.find_elements(By.XPATH, "//a[@href[starts-with(., '/p/')]]")
+            e_posts = driver.find_elements(By.XPATH, xpath_posts)
             for e in e_posts[:6]:
                 try:
                     # 投稿ダイアログを開く
-                    ActionChains(driver).move_to_element(e).perform()
+                    # ActionChains(driver).move_to_element(e).perform()
                     e.click()
                     wait.until(EC.presence_of_element_located((By.XPATH, xpath_dialog)))
                     time.sleep(5)
