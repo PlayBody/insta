@@ -801,7 +801,7 @@ def dsp_pup_list(driver: WebDriver, myname, moji="フォロー中"):
 
 # ポップアップリストのi番目のデータを取ってくる（ポップアップが開いていること前提）
 # もしrmnameと同じならリムる
-def get_pup_info(driver: WebDriver, i, rm_list=None, prev_list=[], moji=None):
+def get_pup_info(driver: WebDriver, rm_list=None, prev_list=[], moji=None):
     # global iscr
     # try:
     #     iscr
@@ -1064,7 +1064,7 @@ def make_list(driver=None, myname=None, follow=0, follower=0):
     except:
         prev_list = []
     
-    new_list = get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji=moji)
+    new_list = get_pup_info(driver, rm_list=None, prev_list=prev_list, moji=moji)
     for user_info in new_list:
         df = pd.concat([
             df, 
@@ -1249,7 +1249,7 @@ def get_diff_follower_list(driver: WebDriver = None, myname=None, max_tnk_dm=20)
     btn_list = driver.find_element(By.XPATH, f"//div/a[contains(text(),'フォロワー')]")
     btn_list.click()
     
-    return get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji="フォロワー") 
+    return get_pup_info(driver, rm_list=None, prev_list=prev_list, moji="フォロワー") 
 
     # max_num = min(int(max_tnk_dm*1.5), int(num_follower))
 
