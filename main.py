@@ -83,15 +83,17 @@ def get_now_time():
     now_dt = datetime.datetime.fromisoformat(now)
     return now, now_dt
 
-def like_more_like(driver: WebDriver, user_name, iine_return_kaisuu):
+# like photo logic.
+def like_more_post(driver: WebDriver, user_name, iine_return_kaisuu):
     handle_array = driver.window_handles
+    iine_kaisuu_num = 0
 
     href = f"https://www.instagram.com/{user_name}/"
     
     # 新しいブランクタブを開く (Open a new blank tab)
     driver.execute_script('window.open()')
     # 結構待たないとかも
-    time.sleep(random.randint(2,3))
+    time.sleep(random.randint(2, 3))
 
     # 新しく開いたタブに切り替える (Change new tab)
     driver.switch_to.window(driver.window_handles[1])
@@ -109,33 +111,18 @@ def like_more_like(driver: WebDriver, user_name, iine_return_kaisuu):
         time.sleep(random.randint(1,2))
 
         for j in range(iine_return_kaisuu):
-            btn_liked = "//span[@class='_aamw']/button"
 
-            # いいねずみだとdivは二つない
-            btn_liked_name = "//span[@class='_aamw']/button/div[2]/span/*[name()='svg']"
             try: # いいねずみだとdivは二つない
-                like = driver.find_element(By.XPATH, btn_liked_name).get_attribute('aria-label')
-                # いいね済か判定
-                if like == 'いいね！':
-                    try:
-                        driver.execute_script('arguments[0].click();', WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, btn_liked))))
-                    except:
-                        elem = driver.find_element(By.XPATH, btn_liked)
-                        elem.click()
-                    print(str(j+1) + 'つ目の投稿のいいね終了')
-                    iine_kaisuu_num += 1
-                    time.sleep(random.randint(4,8))
-                elif like == '「いいね！」を取り消す':
-                    print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
-                    time.sleep(random.randint(1,2))
+                btn_liked = driver.find_element(By.XPATH, "//div[@role='button']/div/span/*[name()='svg' and @aria-label='いいね！']/../../..")
+                btn_liked.click()
+                iine_kaisuu_num += 1
             except:
                 print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
                 time.sleep(random.randint(1,2))
 
-            # 次の投稿の「＞」ボタンをクリックさせる。写真を一枚しか投稿していない場合があるのでtryで。
-            xpath = "//button/div/span/*[name()='svg' and starts-with(@aria-label, '次へ')]/../../.."
-            elem = driver.find_element(By.XPATH, xpath)
             try:
+                # 次の投稿の「＞」ボタンをクリックさせる。写真を一枚しか投稿していない場合があるのでtryで。
+                elem = driver.find_element(By.XPATH, "//div/button/div/span/*[name()='svg' and starts-with(@aria-label, '次へ')]/../../..")
                 try:
                     driver.execute_script('arguments[0].click();', elem)
                 except:
@@ -147,7 +134,7 @@ def like_more_like(driver: WebDriver, user_name, iine_return_kaisuu):
             wait_time[ac_count]
 
     except:
-        traceback.print_exc()
+        # traceback.print_exc()
         print('→アカウントが非公開なのでスキップします')
 
     driver.close()
@@ -156,6 +143,8 @@ def like_more_like(driver: WebDriver, user_name, iine_return_kaisuu):
 
     # 今まで開いていたタブに切り替える
     driver.switch_to.window(handle_array[0])
+    
+    return iine_kaisuu_num
 
 # いいねしてくれた人に対していいねを返す
 def reply_like(driver: WebDriver, iine_return_ninnzuu=100, ac_count=0):
@@ -174,11 +163,15 @@ def reply_like(driver: WebDriver, iine_return_ninnzuu=100, ac_count=0):
     print(f'1人あたりのいいね数 (Likes per person){str(iine_return_kaisuu)}')
     now = datetime.datetime.now()
     print('開始時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
+    
 
+    just_clicked_names = []
     for i in range(iine_return_ninnzuu):
         try:
-            time.sleep(random.randint(7, 10))
-            like_button = driver.find_element(By.XPATH, f"//div[contains(text(),'フォロー') and not(contains(text(),'フォロー中'))]/../..")
+            time.sleep(random.randint(5, 8))
+            like_button = driver.find_element(By.XPATH, "//div[contains(text(),'フォロー') and not(contains(text(),'フォロー中'))]/../..")
+            link_a = driver.find_element(By.XPATH, "//div[contains(text(),'フォロー') and not(contains(text(),'フォロー中'))]/../../../../../div/div/div/div/div/div/a")
+            just_clicked_names.append(link_a.text)
             like_button.click()
         except:
             break
@@ -186,25 +179,15 @@ def reply_like(driver: WebDriver, iine_return_ninnzuu=100, ac_count=0):
     # 〇〇がいいねしました＋アイコン＋いいねされた写真の行
     # 〇〇 liked + icon + liked photo row
     # table_class = ".x6s0dn4.x1q4h3jn.x78zum5.x1y1aw1k.xxbr6pl.xwib8y2.xbbxn1n.x87ps6o.x1wq6e7o.x1di1pr7.x1h4gsww.xux34ky.x1ypdohk.x1l895ks"
-
-    for i in range(iine_return_ninnzuu):
-        print('--- ' + str(i+1) + '人目')
+    time.sleep(random.randint(4, 8))
+    for i, user_name in enumerate(just_clicked_names):
+        print('--- ' + str(i+1) + '人目 ' + user_name)
 
         # usernameを取得
         try:
-            table = driver.find_elements(By.XPATH, f"//a[@role='link']")
+            focus_user = driver.find_element(By.XPATH, f"//span[text()='{user_name}']/../../..")
         except:
             print("通知はありませんでした (There was no notification)")
-            break
-
-        # 全ての通知を検査したらbreak
-        try:
-            # 複数のユーザーネームが表示されるようになった。
-            # そのうちの一番目の人をとってくる
-            user_name = table[i].get_attribute("href").replace("https://www.instagram.com/", "").replace("/", "")
-            print(user_name)
-        except:
-            print("全ての通知を検査しました (Checked all notifications)")
             break
 
         # スクロール処理をさせる
@@ -213,19 +196,10 @@ def reply_like(driver: WebDriver, iine_return_ninnzuu=100, ac_count=0):
         except:
             pass
 
-        if i > 0:
-            # 1つ上の通知と今回の通知のuser_nameを取得
-            user_name_zenkai = table[i-1].get_attribute("href").replace("https://www.instagram.com/", "").replace("/", "")
-
-            # 同じ人ならスキップ
-            if user_name_zenkai == user_name:
-                print('1つ上の通知と同じ人なのでスキップします。 (This is the same person as in the previous notification, so skip it.)')
-                continue
-
         # # 通知内容を取得 (Get notification content)
         # tuuchi_text = table[i].find_elements(By.XPATH, ".//div/span")[-1]
 
-        like_more_like(driver, user_name, iine_return_kaisuu)
+        iine_kaisuu_num += like_more_post(driver, user_name, iine_return_kaisuu)
 
         iine_ninnzuu_num += 1
         ac_count += 1
@@ -609,9 +583,15 @@ def thank_you_dm(driver: WebDriver = None, max_tnk_dm=20, myname=None):
 
         # リストからユーザーネームを打ち込む
         driver.find_element(By.XPATH, "//input[contains(@placeholder, '検索')]").send_keys(diff_list[i])
-        WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//input[@type='checkbox' and @name='ContactSearchResultCheckbox']")))
-        select_button = driver.find_element(By.XPATH, "//input[@type='checkbox' and @name='ContactSearchResultCheckbox']")
-        select_button.click()
+        try:
+            WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, f"//*[name()='span' and contains('{diff_list[i]}', text())]/../../../../../../../div/div/label/div/input")))
+            select_button = driver.find_element(By.XPATH, f"//*[name()='span' and contains('{diff_list[i]}', text())]/../../../../../../../div/div/label/div/input")
+            select_button.click()
+        except:
+            WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, f"//*[name()='span']/../../../../../../../div/div/label/div/input")))
+            select_button = driver.find_element(By.XPATH, f"//*[name()='span']/../../../../../../../div/div/label/div/input")
+            select_button.click()
+
         time.sleep(random.randint(1,2))
         dm_open_button = driver.find_element(By.XPATH, "//div[@role='button' and text()='チャット']")
         dm_open_button.click()
@@ -641,12 +621,12 @@ def thank_you_dm(driver: WebDriver = None, max_tnk_dm=20, myname=None):
             lines = cond_message.splitlines()
             for index, line in enumerate(lines):
                 text_area.send_keys(line)
-                time.sleep(0.2)
+                time.sleep(0.5)
                 if index < len(lines) - 1:
                     actions = ActionChains(driver)
                     actions.key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
-                time.sleep(0.2)
-            time.sleep(random.randint(1,2))
+                time.sleep(0.5)
+            time.sleep(random.randint(1, 2))
             
             actions = ActionChains(driver)
             actions.send_keys(Keys.ENTER).perform()
@@ -702,6 +682,7 @@ def get_follower_from_notice(driver):
         wait.until(EC.presence_of_element_located((By.XPATH, "//div[@data-pressable-container]")))
     time.sleep(random.randint(3,5))
 
+    wait = WebDriverWait(driver, 15)
     try:
         element = wait.until(EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'フォローリクエスト')]")))
     except TimeoutException:
@@ -747,20 +728,8 @@ def get_follower_from_notice(driver):
 
         except Exception as e:
             # Break the loop if no such element is found
-            print("No more elements found to click or an error occurred:", e)
+            print("No more elements found")
             break
-
-    # フォローしてくれた人の一覧を取得
-    # followers = []
-    # elm_followers = driver.find_elements(By.XPATH, f"//span[contains(text(), '{APPROVE_TEXT}')]")
-    # for e in elm_followers:
-    #     i = e.text.find(FOLLOW_TEXT)
-    #     if i == -1:
-    #         continue
-    #     follower = e.text[:i].strip()
-    #     if follower not in saved_followers:
-    #         followers.append(follower)
-    #         print("@" + follower)
 
     # 今回出力されるフォロワーのリストを保存する
     with open(FILE_NAME, 'a') as file:
@@ -775,238 +744,292 @@ def get_follower_from_notice(driver):
     
 
 # ポップアップリストを表示する
-def dsp_pup_list(driver, myname, moji="フォロー中"):
+def dsp_pup_list(driver: WebDriver, myname, moji="フォロー中"):
     jump_url(driver, f"https://www.instagram.com/{myname}")
 
     # リスト数の取得
     try:
-        xpath = f"//div[contains(text(),'{moji}')]/span"
-        elem = driver.find_element(By.XPATH, xpath)
+        elem = driver.find_element(By.XPATH, f"//div/a[contains(text(),'{moji}')]/span/span")
+        num = elem.text.replace('NaN',"0")
     except:
-        print("（デバッグ用）'//div[contains(text(),'{moji}')]/span'失敗")
-        try:
-            xpath = f"//a[contains(text(),'{moji}')]/span"
-            elem = driver.find_element(By.XPATH, xpath)
-        except:
-            print("（デバッグ用）'//a[contains(text(),'{moji}')]/span'失敗")
-            xpath = f"//span[contains(text(),'{moji}')]/span"
-            elem = driver.find_element(By.XPATH, xpath)
+        print(f"（デバッグ用）'//div/a[contains(text(),'{moji}')]/span'失敗")
+        num = '0'
     
-    num = elem.text.replace('NaN',"0")
+    # xpath = "//div[@role='dialog']"
 
-    xpath = "//div[@role='dialog']"
-
-
-    for i in range(0,10):
-        try:
-            try:
-                driver.execute_script('arguments[0].click();', elem)
-                time.sleep(0.5)
-                driver.find_element(By.XPATH, xpath)
-            except:
-                traceback.print_exc()
-                print(f"{moji}driver.execute_script('arguments[0].click();', elem)失敗")
-                try:
-                    elem.click()
-                    time.sleep(0.5)
-                    driver.find_element(By.XPATH, xpath)
-                except:
-                    traceback.print_exc()
-                    try:
-                        print(f"{moji}.click失敗")
-                        time.sleep(0.5)
-                        elem.send_keys(Keys.ENTER)
-                        driver.find_element(By.XPATH, xpath)
-                    except:
-                        traceback.print_exc()
-                        print("enter不可")
-                        try:
-                            driver.execute_script("document.getElementByClassName('_7UhW9   xLCgt      MMzan    _0PwGv         uL8Hv     l4b0S   T0kll ').click();")
-                            time.sleep(0.5)
-                            driver.find_element(By.XPATH, xpath)
-                        except:
-                            print("driver.execute_script('document.getElementByClassName('_7UhW9   xLCgt      MMzan    _0PwGv         uL8Hv     l4b0S   T0kll ').click();')不可")
-                            time.sleep(0.5)
-                            driver.execute_script("document.getElementByClassName('_7UhW9    vy6Bb     MMzan   KV-D4          uL8Hv        T0kll ').click();")
+    # for i in range(0, 10):
+    #     try:
+    #         try:
+    #             driver.execute_script('arguments[0].click();', elem)
+    #             time.sleep(0.5)
+    #             driver.find_element(By.XPATH, xpath)
+    #         except:
+    #             traceback.print_exc()
+    #             print(f"{moji}driver.execute_script('arguments[0].click();', elem)失敗")
+    #             try:
+    #                 elem.click()
+    #                 time.sleep(0.5)
+    #                 driver.find_element(By.XPATH, xpath)
+    #             except:
+    #                 traceback.print_exc()
+    #                 try:
+    #                     print(f"{moji}.click失敗")
+    #                     time.sleep(0.5)
+    #                     elem.send_keys(Keys.ENTER)
+    #                     driver.find_element(By.XPATH, xpath)
+    #                 except:
+    #                     traceback.print_exc()
+    #                     print("enter不可")
+    #                     try:
+    #                         driver.execute_script("document.getElementByClassName('_7UhW9   xLCgt      MMzan    _0PwGv         uL8Hv     l4b0S   T0kll ').click();")
+    #                         time.sleep(0.5)
+    #                         driver.find_element(By.XPATH, xpath)
+    #                     except:
+    #                         print("driver.execute_script('document.getElementByClassName('_7UhW9   xLCgt      MMzan    _0PwGv         uL8Hv     l4b0S   T0kll ').click();')不可")
+    #                         time.sleep(0.5)
+    #                         driver.execute_script("document.getElementByClassName('_7UhW9    vy6Bb     MMzan   KV-D4          uL8Hv        T0kll ').click();")
 
                         
-            time.sleep(0.5)
-            driver.find_element(By.XPATH, xpath)
-            break
-        except:
-            print(f"{moji}ポップアップの表示に{i+1}回失敗しました")
-            pass
+    #         time.sleep(0.5)
+    #         driver.find_element(By.XPATH, xpath)
+    #         break
+    #     except:
+    #         print(f"{moji}ポップアップの表示に {i+1}回失敗しました")
+    #         pass
     
     return num
 
 # ポップアップリストのi番目のデータを取ってくる（ポップアップが開いていること前提）
 # もしrmnameと同じならリムる
-def get_pup_info(driver, i, rm_list=None, prev_list=None, moji=None):
-    global iscr
-    try:
-        iscr
-    except:
-        iscr = 1
-    username_and_name = "._ab8w, ._ab94, ._ab99, ._ab9h, ._ab9m, ._ab9o, ._abcm"
-    id_class = ".x1a2a7pz, .notranslate"
-    username_class = "._ab8y._ab94._ab97._ab9f._ab9k._ab9p._abcm"
-    username_path = '//a[contains(@class,"notranslate")]/span/div'
-    try: # フォロー中の場合
-        # 続きを読み込むためにちゃんとスクロールする
-        # mojiがフォロワーの場合、最初はこのクラスがない。ので、エラーがどうして出てしまう。
-        driver.execute_script(f"document.querySelectorAll('.x1a2a7pz, .notranslate')["+str(int(iscr))+"].scrollIntoView({alignToTop:'True'})")
-    except:
-        # どうしてもエラーが出るのでコメントアウト
-        #traceback.print_exc()
-        pass
-    time.sleep(0.8 * random.randint(1,2))
-
-    driver.implicitly_wait(1)
-    for _ in range(0,15):
+def get_pup_info(driver: WebDriver, i, rm_list=None, prev_list=[], moji=None):
+    # global iscr
+    # try:
+    #     iscr
+    # except:
+    #     iscr = 1
+    # username_path = '//a[contains(@class,"notranslate")]/span/div'
+    follow_path = '//div[@role="button" and text()="削除"]/../../../div/div/div/div/div/div/a/div/div/span'
+    below_track = '//span[contains(text(), "おすすめ")]'
+    
+    for _ in range(0, 20):
         try:
-            # くるくるの要素
-            xpath = "//div/*[name()='svg' and starts-with(@aria-label, '読み込み中')]"
-            driver.find_element(By.XPATH, xpath)
+            end = driver.find_element(By.XPATH, below_track)
+            break
         except:
-            break
-    driver.implicitly_wait(10)
-
-    username = ""
-    # mojiがフォロワーの場合、スクロール処理がないとポップアップがアクティブにならない
-    for _ in range(100):
-        try:
-            #username = driver.find_elements(By.XPATH, username_path)[i].text
-
-            """
-            # テーブル
-            elm = driver.find_elements(By.CSS_SELECTOR, username_and_name)[i]
-            # ↓うまくいかない１
-            elmm = elm.find_elements(By.XPATH, ".//span/a/span/div")
-            """
-            # テーブル
-            # elm = driver.find_elements(By.CSS_SELECTOR, username_and_name)[i+1]
-            elms = driver.find_elements(By.XPATH, ".//a[contains(@class,'notranslate')]/span/div")
-            elmm = elms[i]
-            #for el in elmm:
-            #    print(el.text)
-            username = elmm.text
-            #username = driver.find_elements(By.XPATH, ".//div[contains(@class,' _ab8y  _ab94 _ab97 _ab9f _ab9k _ab9p _abcm')]")[i].text
-            # username = elem.find_element(By.XPATH, ".//span/div").text
-            # username = elem.text
-        except IndexError:
-            # これエラー表示されちゃって見栄え悪い
-            #traceback.print_exc()
-            # 続きを読み込むためにちゃんとスクロールする
-            # 単なるiじゃ制御できない。諦め。原因不明
             try:
-                driver.execute_script(f"document.querySelectorAll('.x1a2a7pz, .notranslate')["+str(iscr)+"].scrollIntoView({alignToTop:'True'})")
+                divparent = driver.find_element(By.XPATH, "//div[contains(@class, 'xyi19xy') and contains(@class, 'x1ccrb07') and contains(@class, 'xtf3nb5') and contains(@class, 'x1pc53ja') and contains(@class, 'x1lliihq') and contains('x1iyjqo2') and contains('xs83m0k')]")
+                driver.execute_script("arguments[0].scrollIntoView({ behavior: 'smooth', block: 'end' });", divparent)
             except:
-                pass
-            iscr += 1
-            time.sleep(0.1)
+                break
             continue
-        else:
-            # なぜかこれが出力される（１．３）NoneType: None
-            # traceback.print_exc()
-            break
     
-    #if len(username) == 0:
-    #    print("0!")
-    driver.implicitly_wait(1)
+    elems = driver.find_elements(By.XPATH, follow_path)
+    profile_list = []
+    dups = []
+    news = []
+    for elem in elems:
+        if not prev_list is None:
+            if elem.text in list(prev_list):
+                dups.append(elem.text)
+            else:
+                news.append(elem.text)
     
-    # ユーザーidではない方のユーザーネーム。idの下に表示されているが、表示されていない人もいる。すると、インデックスiがずれてしまうのでかなり難しい。この機能は凍結
-    name = ""
-    driver.implicitly_wait(10)
+    for new_name in news:
+        time.sleep(random.randint(1, 2))
+        hover = f"//a[contains(@href, '{new_name}') and @role='link']"
+        username_path = f'//a[contains(@href, "{new_name}")]/../../../../span/span'
+        username_tag = driver.find_element(By.XPATH, username_path)
+        wait = WebDriverWait(driver, 10)
+        hover_element = wait.until(EC.presence_of_element_located((By.XPATH, hover)))
 
-    if not prev_list is None:
-        if username in list(prev_list):
-            return None, None
+        # Create an ActionChains object
+        actions = ActionChains(driver)
+
+        # Perform the mouse hover action
+        actions.move_to_element(hover_element).perform()
+
+        accept_text = '0'
+        find_text = '0'
+        post_text = '0'
+        try:
+            accept = driver.find_element(By.XPATH, "//div[contains(text(), 'フォロー中')]/../../../../../../../div/div/div/div/span[contains(text(), 'フォロワー')]/../../div/span/span")
+            accept_text = accept.text
+            find = driver.find_element(By.XPATH, "//div[contains(text(), 'フォロー中')]/../../../../../../../div/div/div/div/span[contains(text(), 'フォロー中')]/../../div/span/span")
+            find_text = find.text
+            post = driver.find_element(By.XPATH, "//div[contains(text(), 'フォロー中')]/../../../../../../../div/div/div/div/span[contains(text(), '投稿')]/../../div/span/span")
+            post_text = post.text
+        except:
+            traceback.print_exc()
+            pass
         
-    rmflag = 0
-    if not rm_list is None:
-        if username in list(rm_list):
-            for _ in range(0,5):
-                # フォロー中のボタンを押す
-                driver.implicitly_wait(1)
-                xpath = "//div/button[@class='_acan _acap _acat']/div/.."
-                elem = driver.find_elements(By.XPATH, xpath)[i]
-                try:
-                    driver.execute_script('arguments[0].click();', elem)
-                except:
-                    elem.click()
+        now = datetime.datetime.now()
+        new_profile = {
+            "ユーザーネーム" : new_name,
+            "フォロワー数" : accept_text,
+            "フォロー数" : find_text,
+            "投稿数" : post_text,
+            "名前" : username_tag.text,
+            # "プロフ文" : profile,
+            '時刻' : "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second)
+        }
+        profile_list.append(new_profile)
+    return profile_list
+    # try: # フォロー中の場合
+    #     # 続きを読み込むためにちゃんとスクロールする
+    #     # mojiがフォロワーの場合、最初はこのクラスがない。ので、エラーがどうして出てしまう。
+    #     driver.execute_script(f"document.querySelectorAll('.x1a2a7pz, .notranslate')["+str(int(iscr))+"].scrollIntoView({alignToTop:'True'})")
+    # except:
+    #     # どうしてもエラーが出るのでコメントアウト
+    #     #traceback.print_exc()
+    #     pass
+    # time.sleep(0.8 * random.randint(1,2))
 
-                driver.implicitly_wait(10)
+    # driver.implicitly_wait(1)
+    # for _ in range(0, 15):
+    #     try:
+    #         # くるくるの要素
+    #         xpath = "//div/*[name()='svg' and starts-with(@aria-label, '読み込み中')]"
+    #         driver.find_element(By.XPATH, xpath)
+    #     except:
+    #         break
+    # driver.implicitly_wait(10)
 
-                # ポップアップを一瞬待つ
-                time.sleep(random.randint(1,2))
-                try:
-                    elem = driver.find_element(By.CSS_SELECTOR, '._a9--._a9-_')
-                    try:
-                        driver.execute_script('arguments[0].click();', elem)
-                    except:
-                        elem.click()
-                    time.sleep(random.randint(1,2))
-                    break
-                except:
-                    print(f"「フォロー中」のクリックに{_+1}回失敗しました。")
-                    time.sleep(0.5)
-                    pass
-            wit = random.randint(rm_interval,int(rm_interval*1.2))
-            rmflag = 1
-            print(f"\n{username}をリムーブしたので{wit}秒待機します。")
-            time.sleep(wit)
-        return username, rmflag
+    # username = ""
+    # # mojiがフォロワーの場合、スクロール処理がないとポップアップがアクティブにならない
+    # for _ in range(100):
+    #     try:
+    #         #username = driver.find_elements(By.XPATH, username_path)[i].text
 
-    # 取得に失敗したら0にしておく
-    toko = 0
-    foler = 0
-    fol = 0
+    #         """
+    #         # テーブル
+    #         elm = driver.find_elements(By.CSS_SELECTOR, username_and_name)[i]
+    #         # ↓うまくいかない１
+    #         elmm = elm.find_elements(By.XPATH, ".//span/a/span/div")
+    #         """
+    #         # テーブル
+    #         # elm = driver.find_elements(By.CSS_SELECTOR, username_and_name)[i+1]
+    #         elms = driver.find_elements(By.XPATH, ".//a[contains(@class,'notranslate')]/span/div")
+    #         elmm = elms[i]
+    #         #for el in elmm:
+    #         #    print(el.text)
+    #         username = elmm.text
+    #         #username = driver.find_elements(By.XPATH, ".//div[contains(@class,' _ab8y  _ab94 _ab97 _ab9f _ab9k _ab9p _abcm')]")[i].text
+    #         # username = elem.find_element(By.XPATH, ".//span/div").text
+    #         # username = elem.text
+    #     except IndexError:
+    #         # これエラー表示されちゃって見栄え悪い
+    #         #traceback.print_exc()
+    #         # 続きを読み込むためにちゃんとスクロールする
+    #         # 単なるiじゃ制御できない。諦め。原因不明
+    #         try:
+    #             driver.execute_script(f"document.querySelectorAll('.x1a2a7pz, .notranslate')["+str(iscr)+"].scrollIntoView({alignToTop:'True'})")
+    #         except:
+    #             pass
+    #         iscr += 1
+    #         time.sleep(0.1)
+    #         continue
+    #     else:
+    #         # なぜかこれが出力される（１．３）NoneType: None
+    #         # traceback.print_exc()
+    #         break
+    
+    # #if len(username) == 0:
+    # #    print("0!")
+    # driver.implicitly_wait(1)
+    
+    # # ユーザーidではない方のユーザーネーム。idの下に表示されているが、表示されていない人もいる。すると、インデックスiがずれてしまうのでかなり難しい。この機能は凍結
+    # name = ""
+    # driver.implicitly_wait(10)
 
-    global over_count
+    # if not prev_list is None:
+    #     if username in list(prev_list):
+    #         return None, None
+        
+    # rmflag = 0
+    # if not rm_list is None:
+    #     if username in list(rm_list):
+    #         for _ in range(0,5):
+    #             # フォロー中のボタンを押す
+    #             driver.implicitly_wait(1)
+    #             xpath = "//div/button[@class='_acan _acap _acat']/div/.."
+    #             elem = driver.find_elements(By.XPATH, xpath)[i]
+    #             try:
+    #                 driver.execute_script('arguments[0].click();', elem)
+    #             except:
+    #                 elem.click()
 
-    # list作成の需要がない場合はスキップ
-    if flag["ml"] == 1:
-        driver.implicitly_wait(1)
-        # 10回連続でマウスオーバーに失敗したら二度とマウスオーバーを行わない。
-        if not over_count > 10:
-            for _ in range(0,3):
-                try:
-                    elm = driver.find_elements(By.XPATH, username_path)[i]
-                    hover = ActionChains(driver).move_to_element(elm)
-                    hover.perform()
-                    xpath = "//div/div[@class='_aacl _aaco _aacu _aacy _aad6 _aadb _aade']/span[@class='_ac2a _ac2b']"
-                    toko = driver.find_elements(By.XPATH, xpath)[0].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
-                    foler = driver.find_elements(By.XPATH, xpath)[1].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
-                    fol = driver.find_elements(By.XPATH, xpath)[2].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
-                    over_count = 0
-                    break
-                except:
-                    if _ == 2:
-                        print(f"マウスオーバーに失敗しました。over_count = {over_count}")
-                        over_count += 1
-                        # traceback.print_exc()
-                    time.sleep(0.5)
-                    pass
-        driver.implicitly_wait(10)
+    #             driver.implicitly_wait(10)
 
-        # 適当なところにマウスを置いて、ポップアップを解除
-        elm = driver.find_element(By.CSS_SELECTOR, '._aadp')
-        hover = ActionChains(driver).move_to_element(elm)
-        hover.perform()
+    #             # ポップアップを一瞬待つ
+    #             time.sleep(random.randint(1,2))
+    #             try:
+    #                 elem = driver.find_element(By.CSS_SELECTOR, '._a9--._a9-_')
+    #                 try:
+    #                     driver.execute_script('arguments[0].click();', elem)
+    #                 except:
+    #                     elem.click()
+    #                 time.sleep(random.randint(1,2))
+    #                 break
+    #             except:
+    #                 print(f"「フォロー中」のクリックに{_+1}回失敗しました。")
+    #                 time.sleep(0.5)
+    #                 pass
+    #         wit = random.randint(rm_interval,int(rm_interval*1.2))
+    #         rmflag = 1
+    #         print(f"\n{username}をリムーブしたので{wit}秒待機します。")
+    #         time.sleep(wit)
+    #     return username, rmflag
 
-    now = datetime.datetime.now()
+    # # 取得に失敗したら0にしておく
+    # toko = 0
+    # foler = 0
+    # fol = 0
 
-    user_info = {
-        "ユーザーネーム" : username,
-        "フォロワー数" : foler,
-        "フォロー数" : fol,
-        "投稿数" : toko,
-        "名前" : name,
-        # "プロフ文" : profile,
-        '時刻' : "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second)
-    }
+    # global over_count
 
-    return user_info, rmflag
+    # # list作成の需要がない場合はスキップ
+    # if flag["ml"] == 1:
+    #     driver.implicitly_wait(1)
+    #     # 10回連続でマウスオーバーに失敗したら二度とマウスオーバーを行わない。
+    #     if not over_count > 10:
+    #         for _ in range(0,3):
+    #             try:
+    #                 elm = driver.find_elements(By.XPATH, username_path)[i]
+    #                 hover = ActionChains(driver).move_to_element(elm)
+    #                 hover.perform()
+    #                 xpath = "//div/div[@class='_aacl _aaco _aacu _aacy _aad6 _aadb _aade']/span[@class='_ac2a _ac2b']"
+    #                 toko = driver.find_elements(By.XPATH, xpath)[0].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
+    #                 foler = driver.find_elements(By.XPATH, xpath)[1].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
+    #                 fol = driver.find_elements(By.XPATH, xpath)[2].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
+    #                 over_count = 0
+    #                 break
+    #             except:
+    #                 if _ == 2:
+    #                     print(f"マウスオーバーに失敗しました。over_count = {over_count}")
+    #                     over_count += 1
+    #                     # traceback.print_exc()
+    #                 time.sleep(0.5)
+    #                 pass
+    #     driver.implicitly_wait(10)
+
+    #     # 適当なところにマウスを置いて、ポップアップを解除
+    #     elm = driver.find_element(By.CSS_SELECTOR, '._aadp')
+    #     hover = ActionChains(driver).move_to_element(elm)
+    #     hover.perform()
+
+    # now = datetime.datetime.now()
+
+    # user_info = {
+    #     "ユーザーネーム" : username,
+    #     "フォロワー数" : foler,
+    #     "フォロー数" : fol,
+    #     "投稿数" : toko,
+    #     "名前" : name,
+    #     # "プロフ文" : profile,
+    #     '時刻' : "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second)
+    # }
+
+    # return user_info, rmflag
 
 # フォロー、フォロワーリスト作成。
 def make_list(driver=None, myname=None, follow=0, follower=0):
@@ -1033,43 +1056,54 @@ def make_list(driver=None, myname=None, follow=0, follower=0):
     now = datetime.datetime.now()
     print('開始時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
 
-    # ポップアップを表示させ、数を取ってくる
+    # ポップアップを表示させ、数を取ってくる (Display a popup and get the number)
     num = dsp_pup_list(driver, myname, moji)
     df = prev_list
     try: # prev_list = pd.DataFrame() これの場合は[]にする
         prev_list = prev_list["ユーザーネーム"]
     except:
         prev_list = []
-    cnt = 0
-    for i in range(0,int(num)):
-        # 必ずしもフォロワー数の要素があるとは限らない。理由は不明。
-        try:
-            user_info, _ = get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji=moji)
-        except:
-            traceback.print_exc()
-            continue
-        cnt += 1
-        print(f"\r{moji}リスト作成中：{cnt}/{num}", end="")
-        # prev_listに名前があった場合
-        if user_info is None:
-            continue
+    
+    new_list = get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji=moji)
+    for user_info in new_list:
         df = pd.concat([
             df, 
             pd.DataFrame(user_info.values(), index=user_info.keys()).T],
             ignore_index=True
         )
 
+    
+    # cnt = 0
+    # for i in range(0, int(num)):
+    #     # 必ずしもフォロワー数の要素があるとは限らない。理由は不明。// The number of followers is not necessarily a factor. The reason is unclear.
+    #     try:
+    #         user_info, _ = get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji=moji)
+    #     except:
+    #         traceback.print_exc()
+    #         continue
+    #     cnt += 1
+    #     print(f"\r{moji}リスト作成中：{cnt}/{num}", end="")
+    #     # prev_listに名前があった場合
+    #     if user_info is None:
+    #         continue
+    #     df = pd.concat([
+    #         df, 
+    #         pd.DataFrame(user_info.values(), index=user_info.keys()).T],
+    #         ignore_index=True
+    #     )
+
     # csvに吐き出し
     with open(dir, mode="w", encoding="shift jis", errors="ignore", newline='') as f:
         df.to_csv(f, index=False)
     now = datetime.datetime.now()
-    print('\n完了時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
+    print('\n完了時刻:' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
     print(f'---- {moji}リスト作成を終了します ----')
 
 
 # こちらが片思いしているユーザーをリムる
 # 一度にリムりすぎると凍結の恐れがある？
 def remove_kataomoi(driver, myname, max_remove=30):
+    return
     print('---- 片想いの人をリムーブします ----')
     print(f"最大{max_remove}人に対してリムーブを行います。")
     now = datetime.datetime.now()
@@ -1111,98 +1145,98 @@ def remove_kataomoi(driver, myname, max_remove=30):
             break
 
     now = datetime.datetime.now()
-    print('\n完了時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
+    print('\n完了時刻:' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
     print('---- 片想いリムーブを終了します ----')
 
 
-def get_info(driver, href):
-    # 新しいブランクタブを開く
-    driver.execute_script('window.open()')
-    time.sleep(1)
+# def get_info(driver: WebDriver, href):
+#     # 新しいブランクタブを開く
+#     driver.execute_script('window.open()')
+#     time.sleep(1)
 
-    # 新しいタブへ移動して開く
-    driver.switch_to.window(driver.window_handles[1])
-    jump_url(driver, href)
+#     # 新しいタブへ移動して開く
+#     driver.switch_to.window(driver.window_handles[1])
+#     jump_url(driver, href)
 
-    # usernameを取得  
-    username = driver.find_element(By.CSS_SELECTOR, '._7UhW9.fKFbl.yUEEX.KV-D4.fDxYl').text
+#     # usernameを取得  
+#     username = driver.find_element(By.CSS_SELECTOR, '._7UhW9.fKFbl.yUEEX.KV-D4.fDxYl').text
 
-    # フォロワー数を取得
-    try:
-        elems = driver.find_elements(By.CLASS_NAME, "g47SY")
-    except:
-        traceback.print_exc()
-        pass
+#     # フォロワー数を取得
+#     try:
+#         elems = driver.find_elements(By.CLASS_NAME, "g47SY")
+#     except:
+#         traceback.print_exc()
+#         pass
 
-    # 一部文字を置換する
-    num_follower = elems[1].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
+#     # 一部文字を置換する
+#     num_follower = elems[1].text.replace("万","000").replace(".","").replace('NaN',"0").replace(' ', '')
 
-    # findElement()もしくはfindElements()を呼んでいるときに限り要素が現れるまで一定の時間まで自動的に待機します
-    driver.implicitly_wait(2)
+#     # findElement()もしくはfindElements()を呼んでいるときに限り要素が現れるまで一定の時間まで自動的に待機します
+#     driver.implicitly_wait(2)
 
-    # 名前を取得
-    try:
-        name = driver.find_element(By.CLASS_NAME, "Yk1V7").text
-    except:
-        name = "None"
-        pass
+#     # 名前を取得
+#     try:
+#         name = driver.find_element(By.CLASS_NAME, "Yk1V7").text
+#     except:
+#         name = "None"
+#         pass
 
-    # プロフ文を取得
-    xpath = "//div[@class='QGPIr']/span"
-    try:
-        profile = driver.find_element(By.XPATH, xpath).text
-    except:
-        profile = "None"
-        pass
+#     # プロフ文を取得
+#     xpath = "//div[@class='QGPIr']/span"
+#     try:
+#         profile = driver.find_element(By.XPATH, xpath).text
+#     except:
+#         profile = "None"
+#         pass
 
 
-    # フォロー数を取得
-    try:
-        num_follow = elems[2].text
-    except:
-        traceback.print_exc()
-        num_follow = "None"
-        pass
+#     # フォロー数を取得
+#     try:
+#         num_follow = elems[2].text
+#     except:
+#         traceback.print_exc()
+#         num_follow = "None"
+#         pass
 
-    # 投稿数を取得
-    try:
-        num_post = elems[0].text
-    except:
-        traceback.print_exc()
-        num_post = "None"
-        pass
+#     # 投稿数を取得
+#     try:
+#         num_post = elems[0].text
+#     except:
+#         traceback.print_exc()
+#         num_post = "None"
+#         pass
 
-    now = datetime.datetime.now()
+#     now = datetime.datetime.now()
 
-    user_info = {
-        "ユーザーネーム" : username,
-        "フォロワー数" : num_follower,
-        "フォロー数" : num_follow,
-        "投稿数" : num_post,
-        "名前" : name,
-        "プロフ文" : profile,
-        '時刻' : "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second)
-    }
+#     user_info = {
+#         "ユーザーネーム" : username,
+#         "フォロワー数" : num_follower,
+#         "フォロー数" : num_follow,
+#         "投稿数" : num_post,
+#         "名前" : name,
+#         "プロフ文" : profile,
+#         '時刻' : "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second)
+#     }
 
-    # 元に戻す
-    driver.implicitly_wait(10)
+#     # 元に戻す
+#     driver.implicitly_wait(10)
 
-    #開いたタブを閉じる
-    driver.close()
+#     #開いたタブを閉じる
+#     driver.close()
 
-    # ちょっと待つ
-    time.sleep(1)
+#     # ちょっと待つ
+#     time.sleep(1)
 
-    # 現在開いてるタブの取得
-    handle_array = driver.window_handles
+#     # 現在開いてるタブの取得
+#     handle_array = driver.window_handles
 
-    # 今まで開いていたタブに切り替える
-    driver.switch_to.window(handle_array[0])
+#     # 今まで開いていたタブに切り替える
+#     driver.switch_to.window(handle_array[0])
+#     return user_info
 
-    return user_info
 
-# 新しいフォロワーを抽出
-def get_diff_follower_list(driver=None, myname=None, max_tnk_dm=20):
+# 新しいフォロワーを抽出 (Extract new followers)
+def get_diff_follower_list(driver: WebDriver = None, myname=None, max_tnk_dm=20):
     # 前のリストからユーザーネームリストを取得
     try:
         prev_list = pd.read_csv( f"./{myname}_follower_list.csv", encoding="shift jis")["ユーザーネーム"]
@@ -1210,30 +1244,33 @@ def get_diff_follower_list(driver=None, myname=None, max_tnk_dm=20):
         prev_list = []
         pass
     
-    num_follower = dsp_pup_list(driver, myname, moji="フォロワー")
+    dsp_pup_list(driver, myname, moji="フォロワー")
 
-    diff_list = []
+    btn_list = driver.find_element(By.XPATH, f"//div/a[contains(text(),'フォロワー')]")
+    btn_list.click()
+    
+    return get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji="フォロワー") 
 
-    max_num = min(int(max_tnk_dm*1.5), int(num_follower))
+    # max_num = min(int(max_tnk_dm*1.5), int(num_follower))
 
-    for i in range(0,int(num_follower)):
-        # 必ずしもフォロワー数の要素があるとは限らない。理由は不明。
-        try:
-            user_info, _ = get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji="フォロワー") 
-        except:
-            continue
-        if not user_info is None:
-            diff_list.append(user_info["ユーザーネーム"])
-        # そんなに多くの人を検出するとスコアが下がる
-        # チェックした回数ではなくdiffを検出した回数なことに注意
-        if len(diff_list) == max_num:
-            print(f"新規フォロワー検出中{len(diff_list)}/{max_num}")
-            break
-        else:
-            print(f"新規フォロワー検出中{len(diff_list)}/{max_num}", end="\r")
+    # for i in range(0, int(num_follower)):
+    #     # 必ずしもフォロワー数の要素があるとは限らない。理由は不明。
+    #     try:
+    #         user_info, _ = get_pup_info(driver, i, rm_list=None, prev_list=prev_list, moji="フォロワー") 
+    #     except:
+    #         continue
+    #     if not user_info is None:
+    #         diff_list.append(user_info["ユーザーネーム"])
+    #     # そんなに多くの人を検出するとスコアが下がる
+    #     # チェックした回数ではなくdiffを検出した回数なことに注意
+    #     if len(diff_list) == max_num:
+    #         print(f"新規フォロワー検出中{len(diff_list)}/{max_num}")
+    #         break
+    #     else:
+    #         print(f"新規フォロワー検出中{len(diff_list)}/{max_num}", end="\r")
             
 
-    return diff_list
+    # return diff_list
 
 def auto_follow(driver: WebDriver):
     print("---- 指定のユーザーへ直近でアクションがあるユーザーを自動でフォローする ----")
@@ -1452,7 +1489,6 @@ if __name__ == '__main__':
                     make_list(driver=driver, myname=myname, follow=0, follower=1)
                     # 現時点のフォロリストを作成
                     make_list(driver=driver, myname=myname, follow=1, follower=0)
-
 
             if p_count == 3:
                 p_count += 1
