@@ -20,6 +20,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 # Numerical libs
 import numpy as np
 
@@ -51,7 +52,7 @@ taglist = [SETTING["tag1"], SETTING["tag2"], SETTING["tag3"]]
 dm_condition = SETTING["dm_condition"]
 
 
-def jump_url(driver, url):
+def jump_url(driver: WebDriver, url):
     # たまに読み込めないことがあるので10回はトライする
     for _ in range(0,10):
         try:
@@ -82,9 +83,82 @@ def get_now_time():
     now_dt = datetime.datetime.fromisoformat(now)
     return now, now_dt
 
+def like_more_like(driver: WebDriver, user_name, iine_return_kaisuu):
+    handle_array = driver.window_handles
+
+    href = f"https://www.instagram.com/{user_name}/"
+    
+    # 新しいブランクタブを開く (Open a new blank tab)
+    driver.execute_script('window.open()')
+    # 結構待たないとかも
+    time.sleep(random.randint(2,3))
+
+    # 新しく開いたタブに切り替える (Change new tab)
+    driver.switch_to.window(driver.window_handles[1])
+    # 無題タブができて止まること多い Often gets stuck on an untitled tab  "https://www.instagram.com/{user_name.text}/"
+    jump_url(driver, href)
+    
+    try:
+        # 1つ目の投稿をクリックさせる。写真を投稿していない場合もあるのでtryで。 (Click on the first post. Try it out since there may be cases where you haven't posted a photo.)
+        elem = driver.find_element(By.CLASS_NAME, '_aagv')
+        try:
+            driver.execute_script('arguments[0].click();', elem)
+        except:
+            traceback.print_exc()
+            elem.click()
+        time.sleep(random.randint(1,2))
+
+        for j in range(iine_return_kaisuu):
+            btn_liked = "//span[@class='_aamw']/button"
+
+            # いいねずみだとdivは二つない
+            btn_liked_name = "//span[@class='_aamw']/button/div[2]/span/*[name()='svg']"
+            try: # いいねずみだとdivは二つない
+                like = driver.find_element(By.XPATH, btn_liked_name).get_attribute('aria-label')
+                # いいね済か判定
+                if like == 'いいね！':
+                    try:
+                        driver.execute_script('arguments[0].click();', WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, btn_liked))))
+                    except:
+                        elem = driver.find_element(By.XPATH, btn_liked)
+                        elem.click()
+                    print(str(j+1) + 'つ目の投稿のいいね終了')
+                    iine_kaisuu_num += 1
+                    time.sleep(random.randint(4,8))
+                elif like == '「いいね！」を取り消す':
+                    print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
+                    time.sleep(random.randint(1,2))
+            except:
+                print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
+                time.sleep(random.randint(1,2))
+
+            # 次の投稿の「＞」ボタンをクリックさせる。写真を一枚しか投稿していない場合があるのでtryで。
+            xpath = "//button/div/span/*[name()='svg' and starts-with(@aria-label, '次へ')]/../../.."
+            elem = driver.find_element(By.XPATH, xpath)
+            try:
+                try:
+                    driver.execute_script('arguments[0].click();', elem)
+                except:
+                    #traceback.print_exc()
+                    elem.click()
+            except:
+                print("次の投稿がありませんでした。")
+                break
+            wait_time[ac_count]
+
+    except:
+        traceback.print_exc()
+        print('→アカウントが非公開なのでスキップします')
+
+    driver.close()
+    # 現在開いてるタブの取得
+    handle_array = driver.window_handles
+
+    # 今まで開いていたタブに切り替える
+    driver.switch_to.window(handle_array[0])
 
 # いいねしてくれた人に対していいねを返す
-def reply_like(driver, iine_return_ninnzuu=100, ac_count=0):
+def reply_like(driver: WebDriver, iine_return_ninnzuu=100, ac_count=0):
     # 一人当たりのいいねの回数をランダムに設定(左側の数字が最小、右側の数字が最大)
     iine_return_kaisuu = random.randint(1,3)
     # アクティビティフィードを開く
@@ -101,16 +175,24 @@ def reply_like(driver, iine_return_ninnzuu=100, ac_count=0):
     now = datetime.datetime.now()
     print('開始時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
 
+    for i in range(iine_return_ninnzuu):
+        try:
+            time.sleep(random.randint(7, 10))
+            like_button = driver.find_element(By.XPATH, f"//div[contains(text(),'フォロー') and not(contains(text(),'フォロー中'))]/../..")
+            like_button.click()
+        except:
+            break
+    
     # 〇〇がいいねしました＋アイコン＋いいねされた写真の行
     # 〇〇 liked + icon + liked photo row
-    table_class = ".x6s0dn4.x1q4h3jn.x78zum5.x1y1aw1k.xxbr6pl.xwib8y2.xbbxn1n.x87ps6o.x1wq6e7o.x1di1pr7.x1h4gsww.xux34ky.x1ypdohk.x1l895ks"
+    # table_class = ".x6s0dn4.x1q4h3jn.x78zum5.x1y1aw1k.xxbr6pl.xwib8y2.xbbxn1n.x87ps6o.x1wq6e7o.x1di1pr7.x1h4gsww.xux34ky.x1ypdohk.x1l895ks"
 
     for i in range(iine_return_ninnzuu):
         print('--- ' + str(i+1) + '人目')
 
         # usernameを取得
         try:
-            table = driver.find_elements(By.CSS_SELECTOR, table_class)
+            table = driver.find_elements(By.XPATH, f"//a[@role='link']")
         except:
             print("通知はありませんでした (There was no notification)")
             break
@@ -119,9 +201,8 @@ def reply_like(driver, iine_return_ninnzuu=100, ac_count=0):
         try:
             # 複数のユーザーネームが表示されるようになった。
             # そのうちの一番目の人をとってくる
-            user_name = table[i].find_elements(By.XPATH, ".//div/span/a/span")[0]
-            # 取れなかったらブレイク
-            user_name.text
+            user_name = table[i].get_attribute("href").replace("https://www.instagram.com/", "").replace("/", "")
+            print(user_name)
         except:
             print("全ての通知を検査しました (Checked all notifications)")
             break
@@ -134,110 +215,27 @@ def reply_like(driver, iine_return_ninnzuu=100, ac_count=0):
 
         if i > 0:
             # 1つ上の通知と今回の通知のuser_nameを取得
-            
-            user_name_zenkai = table[i-1].find_element(By.XPATH, ".//div/span/a/span")
+            user_name_zenkai = table[i-1].get_attribute("href").replace("https://www.instagram.com/", "").replace("/", "")
 
             # 同じ人ならスキップ
-            if user_name_zenkai.text == user_name.text:
+            if user_name_zenkai == user_name:
                 print('1つ上の通知と同じ人なのでスキップします。 (This is the same person as in the previous notification, so skip it.)')
                 continue
 
-        # 通知内容を取得
-        tuuchi_text = table[i].find_elements(By.XPATH, ".//div/span")[-1]
+        # # 通知内容を取得 (Get notification content)
+        # tuuchi_text = table[i].find_elements(By.XPATH, ".//div/span")[-1]
 
-        # 「いいねしました」ではないならスキップ
-        if ('いいね！' in tuuchi_text.text and 'しました' in tuuchi_text.text) or ('liked' in tuuchi_text.text and 'your' in tuuchi_text.text)  :
-            print(user_name.text + tuuchi_text.text)
-            print('いいね返しします。 (I ll like it back.)')
-            # 現在開いてるタブの取得
-            handle_array = driver.window_handles
+        like_more_like(driver, user_name, iine_return_kaisuu)
 
-            href = f"https://www.instagram.com/{user_name.text}/"
-            
-            # 新しいブランクタブを開く
-            driver.execute_script('window.open()')
-            # 結構待たないとかも
-            time.sleep(random.randint(2,3))
-
-            # 新しく開いたタブに切り替える
-            driver.switch_to.window(driver.window_handles[1])
-            # 無題タブができて止まること多い
-            jump_url(driver, href)
-            
-            try:
-                # 1つ目の投稿をクリックさせる。写真を投稿していない場合もあるのでtryで。
-                elem = driver.find_element(By.CLASS_NAME, '_aagv')
-                try:
-                    driver.execute_script('arguments[0].click();', elem)
-                except:
-                    traceback.print_exc()
-                    elem.click()
-                time.sleep(random.randint(1,2))
-
-                for j in range(iine_return_kaisuu):
-                    btn_liked = "//span[@class='_aamw']/button"
-
-                    # いいねずみだとdivは二つない
-                    btn_liked_name = "//span[@class='_aamw']/button/div[2]/span/*[name()='svg']"
-                    try: # いいねずみだとdivは二つない
-                        like = driver.find_element(By.XPATH, btn_liked_name).get_attribute('aria-label')
-                        # いいね済か判定
-                        if like == 'いいね！':
-                            try:
-                                driver.execute_script('arguments[0].click();', WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, btn_liked))))
-                            except:
-                                elem = driver.find_element(By.XPATH, btn_liked)
-                                elem.click()
-                            print(str(j+1) + 'つ目の投稿のいいね終了')
-                            iine_kaisuu_num += 1
-                            time.sleep(random.randint(4,8))
-                        elif like == '「いいね！」を取り消す':
-                            print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
-                            time.sleep(random.randint(1,2))
-                    except:
-                        print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
-                        time.sleep(random.randint(1,2))
-
-                    # 次の投稿の「＞」ボタンをクリックさせる。写真を一枚しか投稿していない場合があるのでtryで。
-                    xpath = "//button/div/span/*[name()='svg' and starts-with(@aria-label, '次へ')]/../../.."
-                    elem = driver.find_element(By.XPATH, xpath)
-                    try:
-                        try:
-                            driver.execute_script('arguments[0].click();', elem)
-                        except:
-                            #traceback.print_exc()
-                            elem.click()
-                    except:
-                        print("次の投稿がありませんでした。")
-                        break
-                    wait_time[ac_count]
-
-            except:
-                traceback.print_exc()
-                print('→アカウントが非公開なのでスキップします')
-
-            driver.close()
-            iine_ninnzuu_num += 1
-            ac_count += 1
-            wait_time[ac_count]
-
-            # 現在開いてるタブの取得
-            handle_array = driver.window_handles
-
-            # 今まで開いていたタブに切り替える
-            driver.switch_to.window(handle_array[0])
-
-        # 「いいねしました」ではないならスキップ
-        else:
-            print('→いいねではなかったのでスキップします')
-
+        iine_ninnzuu_num += 1
+        ac_count += 1
+        wait_time[ac_count]
 
     print('いいねした人数：' + str(iine_ninnzuu_num) + '人')
     print('いいねを押した数：' + str(iine_kaisuu_num) + '回')
     now = datetime.datetime.now()
     print('完了時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
     print('---- いいね返しが終了しました ----')
-
     return ac_count
 
 def check_follower(driver, href, max_follower=5000, base_url=None):
@@ -556,7 +554,7 @@ def tag_action(driver=None, ac_count=0, max_follower=5000, wait_time=None):
     print('完了時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
     print('---- tag検索からのフォローといいねを終了します ----')
 
-def dm_init(driver):
+def dm_init(driver: WebDriver):
     jump_url(driver, "https://www.instagram.com/direct/inbox/")
 
 
@@ -572,14 +570,29 @@ def dm_init(driver):
         except Exception:
             break
 
+# 別タブのプロフィールを元に国籍を判定する
+def get_nationality(profile_text = ""):
+    # 日本語の文字セットの範囲
+    ranges = [
+        {'from': ord(u'\u3040'), 'to': ord(u'\u309f')},  # ひらがな
+        {'from': ord(u'\u30a0'), 'to': ord(u'\u30ff')},  # カタカナ
+    ]
+    
+    for character in profile_text:
+        if any([range['from'] <= ord(character) <= range['to'] for range in ranges]):
+            return "japanese"  # 日本語の文字が見つかった場合
+    return "foreigner"  # 日本語の文字が見つからない場合
+
 # 新しくフォローしてくれた人に対してDMする
-def thank_you_dm(driver=None, max_tnk_dm=20, myname=None):
+def thank_you_dm(driver: WebDriver = None, max_tnk_dm=20, myname=None):
 
     print('---- 新規フォロワーに対してDMします ----')
     now = datetime.datetime.now()
     print('開始時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
 
+    # clicked approved button
     diff_list = get_follower_from_notice(driver)
+    # click new unnecessary popup
     dm_init(driver)
 
     dm_count = 0
@@ -596,166 +609,63 @@ def thank_you_dm(driver=None, max_tnk_dm=20, myname=None):
 
         # リストからユーザーネームを打ち込む
         driver.find_element(By.XPATH, "//input[contains(@placeholder, '検索')]").send_keys(diff_list[i])
-        WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//span[text()='" + diff_list[i] + "']/ancestor::*[@role='button']")))
+        WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, "//input[@type='checkbox' and @name='ContactSearchResultCheckbox']")))
+        select_button = driver.find_element(By.XPATH, "//input[@type='checkbox' and @name='ContactSearchResultCheckbox']")
+        select_button.click()
         time.sleep(random.randint(1,2))
-        try:
-            # 指定のユーザーを探す
-            elm_tar_user = driver.find_element(By.XPATH, "//span[text()='" + diff_list[i] + "']/ancestor::*[@role='button']")
-            # 選択ボタンの◯をクリック
-            elm_tar_btn = elm_tar_user.find_element(By.XPATH, ".//input[starts-with(@aria-label, 'オン・オフを切り替え')]")
-            try:
-                driver.execute_script('arguments[0].click();', WebDriverWait(driver, 5).until(EC.element_to_be_clickable(elm_tar_btn)))
-            except:
-                traceback.print_exc()
-                elm_tar_btn.click()
-        except:
-            traceback.print_exc()
-            try:
-                xpath = "//div[contains(text(),'アカウントが見つかりません。')]"
-                driver.find_element(By.XPATH, xpath)
-                print(f"{diff_list[i]}のアカウントが見つかりません。")
-                continue
-            except:
-                traceback.print_exc()
-                dm_init(driver)
-                continue
-
+        dm_open_button = driver.find_element(By.XPATH, "//div[@role='button' and text()='チャット']")
+        dm_open_button.click()
         time.sleep(random.randint(1,2))
-
-        # チャットをクリック
-        xpath = "//div[text()='チャット']"
-        elem = driver.find_element(By.XPATH, xpath)
-        try:
-            try:
-                driver.execute_script('arguments[0].click();', elem)
-            except:
-                traceback.print_exc()
-                elem.click()
-        except:
-            traceback.print_exc()
-            dm_init(driver)
-            continue
-
-        # 送信先のプロフィールを別タブで表示する
-        is_open_profile = False
-        try:
-            main_window_handle = driver.current_window_handle
-            driver.execute_script("window.open('https://www.instagram.com/" + diff_list[i] + "');")
-            profile_window_handle = [handle for handle in driver.window_handles if handle != main_window_handle][0]
-            is_open_profile = True
-            driver.switch_to.window(profile_window_handle)
-        except:
-            if is_open_profile:
-                driver.switch_to.window(profile_window_handle)
-                driver.close()
-            traceback.print_exc()
-            dm_init(driver)
-            continue
-
-        time.sleep(random.randint(3,4))
-
-        # 別タブのプロフィールを元に国籍を判定する
-        def get_nationality(profile_text):
-            # 日本語の文字セットの範囲
-            ranges = [
-                {'from': ord(u'\u3040'), 'to': ord(u'\u309f')},  # ひらがな
-                {'from': ord(u'\u30a0'), 'to': ord(u'\u30ff')},  # カタカナ
-            ]
-            
-            for character in profile_text:
-                if any([range['from'] <= ord(character) <= range['to'] for range in ranges]):
-                    return "japanese"  # 日本語の文字が見つかった場合
-            return "foreigner"  # 日本語の文字が見つからない場合
-        try:
-            profile = ""
-            try:
-                for t in driver.find_elements(By.TAG_NAME, "h1"):
-                    profile += t.text
-            except:
-                profile = ""
-            nationality = get_nationality(profile)
-        except:
-            if is_open_profile:
-                driver.switch_to.window(profile_window_handle)
-                driver.close()
-            traceback.print_exc()
-            dm_init(driver)
-            continue
-        if is_open_profile:
-            driver.switch_to.window(profile_window_handle)
-            driver.close()
-        driver.switch_to.window(main_window_handle)
-
-        # 次の人読み込むまで待たないと、同じ人に２回DM送ってしまう。
-        time.sleep(random.randint(3,5))
-
-        # 相手からのメッセージリクエストが認証待ちの場合は「認証」を押したいが、デバックが面倒なのでスキップする
-        # 他にも相手を制限していると"._ac6v"の要素が出てくる
-        if len(driver.find_elements(By.CSS_SELECTOR, "._ac6v")) > 1:
-            dm_init(driver)
-            continue
-        time.sleep(random.randint(1,2))
-
-        # すでにメッセージしていたらcontinue
-        driver.implicitly_wait(2)
-        try:
-            xpath = "//*[@aria-label='Double tap to like']"
-            driver.find_element(By.XPATH, xpath) # 吹き出しをチェックして自分から1件でもメッセージを送っていたら中断する
-            print(f"@{diff_list[i]}へDM送信済みなので中断")
-            continue
-        except:
-            pass
-        driver.implicitly_wait(10)
-
+        # info_button = driver.find_element(By.XPATH, "//div/*[name()='svg' and @aria-label='スレッド情報' and @role='img']/../..")
+        # info_button.click()
+        profile_name = driver.find_element(By.XPATH, "//div[@role='presentation']/div/div/div/span[@dir='auto']/span")
+        
+        country = get_nationality(profile_name.text)
+        
+        text_area = driver.find_element(By.XPATH, "//div[@role='textbox' and @spellcheck='true']")
+        
         # ここエラー起きやすいから10回トライしたら諦める
         try:
-            for j in range(0,10):
-                # DM送信条件を考慮してメッセージを取得する
-                cond_message = None
-                for cond in dm_condition:
-                    cond_nationality = cond.get("nationality")
-                    if nationality == cond_nationality:
-                        cond_message = cond.get("message")
-                        break
-                if cond_message is None:
-                    # メッセージが取得できなかった場合は送信を中断
-                    print(f"@{diff_list[i]}は条件を満たさないのでDM送信しない")
-                    raise Exception("DM送信しない")
-                # テキストエリアにメッセージを打ち込む
-                xpath = "//div/*[starts-with(@aria-label, 'メッセージ')]"
-                lines = cond_message.splitlines()
-                for index, line in enumerate(lines):
-                    driver.find_element(By.XPATH, xpath).send_keys(line)
-                    time.sleep(0.2)
-                    if index < len(lines) - 1:
-                        actions = ActionChains(driver)
-                        actions.key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
-                    time.sleep(0.2)
-                time.sleep(random.randint(1,2))
-                # 送信ボタン押す
-                xpath = "//div[contains(text(),'送信')]"
-                elem = driver.find_elements(By.XPATH, xpath)[-1]
-                try:
-                    driver.execute_script('arguments[0].click();', elem)
-                except:
-                    elem.click()
-                break
+            cond_message = None
+            for cond in dm_condition:
+                cond_nationality = cond.get("nationality")
+                if country == cond_nationality:
+                    cond_message = cond.get("message")
+                    break
+            if cond_message is None:
+                # メッセージが取得できなかった場合は送信を中断
+                print(f"@{diff_list[i]}は条件を満たさないのでDM送信しない")
+                raise Exception("DM送信しない")
+            # テキストエリアにメッセージを打ち込む Type your message in the text area
+            xpath = "//div/*[starts-with(@aria-label, 'メッセージ')]"
+            lines = cond_message.splitlines()
+            for index, line in enumerate(lines):
+                text_area.send_keys(line)
+                time.sleep(0.2)
+                if index < len(lines) - 1:
+                    actions = ActionChains(driver)
+                    actions.key_down(Keys.SHIFT).send_keys(Keys.ENTER).key_up(Keys.SHIFT).perform()
+                time.sleep(0.2)
+            time.sleep(random.randint(1,2))
+            
+            actions = ActionChains(driver)
+            actions.send_keys(Keys.ENTER).perform()
         except:
             dm_init(driver)
             continue
 
         dm_count += 1
         if not i == len(diff_list)-1:
-            wit = random.randint(dm_interval,int(dm_interval*1.2))
+            wit = random.randint(dm_interval, int(dm_interval*1.2))
         else:
             wit = 0
 
         if dm_count == max_tnk_dm:
-            print(f"DMを送った人数：{dm_count} | {wit}秒待機します。")
+            print(f"DMを送った人数:{dm_count} | {wit}秒待機します。")
             time.sleep(wit)
             break
         else:
-            print(f"DMを送った人数：{dm_count} | {wit}秒待機します。", end="\r")
+            print(f"DMを送った人数:{dm_count} | {wit}秒待機します。", end="\r")
             time.sleep(wit)
 
     time.sleep(random.randint(3,5))
@@ -821,9 +731,7 @@ def get_follower_from_notice(driver):
         try:
             # Find the div element that contains the APPROVE_TEXT and has role='button'
             element = wait.until(EC.presence_of_element_located((By.XPATH, f"//div[contains(text(), '{APPROVE_TEXT}') and @role='button']")))
-            pp_element = element.find_element(By.XPATH, '..').find_element(By.XPATH, '..').find_element(By.XPATH, '..')
-            temp_element = pp_element.find_element(By.XPATH, "//*[@class='x7a106z x78zum5 xdt5ytf x1iyjqo2']").find_element(By.XPATH, ".//*")
-            text_element = temp_element.find_element(By.XPATH, ".//*")
+            text_element = element.find_element(By.XPATH, "../../..//*[contains(@class, 'x7a106z') and contains(@class, 'x78zum5') and contains(@class, 'xdt5ytf') and contains(@class, 'x1iyjqo2')]//*//*")
             follower = text_element.text.strip()
             
             if follower not in saved_followers:
