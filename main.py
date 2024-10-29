@@ -331,7 +331,7 @@ def insta_login(driver, myname, password):
         driver.implicitly_wait(2)
         driver.find_element(By.XPATH, setting_icon)
         return
-    except TimeoutException:
+    except Exception:
         pass
 
     # loginしていた場合はログアウトしてから再起動するように促す
