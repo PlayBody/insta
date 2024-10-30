@@ -5,7 +5,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('C:/Users/chh/AppData/Roaming/Python/Python312/site-packages/selenium_stealth/js/', 'selenium_stealth/js')],
+    datas=[('C:/Users/Dev/AppData/Local/Programs/Python/Python313/Lib/site-packages/selenium_stealth/js/', 'selenium_stealth/js')],
     hiddenimports=['selenium_stealth'],
     hookspath=[],
     hooksconfig={},

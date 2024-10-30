@@ -615,23 +615,29 @@ def thank_you_dm(driver: WebDriver = None, max_tnk_dm=20, myname=None):
         # リストからユーザーネームを打ち込む
         driver.find_element(By.XPATH, "//input[contains(@placeholder, '検索')]").send_keys(diff_list[i])
         try:
-            WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, f"//*[name()='span' and contains('{diff_list[i]}', text())]/../../../../../../../div/div/label/div/input")))
+            WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, f"//*[name()='span' and contains('{diff_list[i]}', text())]/../../../../../../../div/div/label/div/input")))
             select_button = driver.find_element(By.XPATH, f"//*[name()='span' and contains('{diff_list[i]}', text())]/../../../../../../../div/div/label/div/input")
             select_button.click()
         except:
-            WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, f"//*[name()='span']/../../../../../../../div/div/label/div/input")))
-            select_button = driver.find_element(By.XPATH, f"//*[name()='span']/../../../../../../../div/div/label/div/input")
-            select_button.click()
-
-        time.sleep(random.randint(1,2))
-        dm_open_button = driver.find_element(By.XPATH, "//div[@role='button' and text()='チャット']")
-        dm_open_button.click()
-        time.sleep(random.randint(1,2))
-        # info_button = driver.find_element(By.XPATH, "//div/*[name()='svg' and @aria-label='スレッド情報' and @role='img']/../..")
-        # info_button.click()
-        profile_name = driver.find_element(By.XPATH, "//div[@role='presentation']/div/div/div/span[@dir='auto']/span")
-        
-        country = get_nationality(profile_name.text)
+            try:
+                WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.XPATH, f"//*[name()='span']/../../../../../../../div/div/label/div/input")))
+                select_button = driver.find_element(By.XPATH, f"//*[name()='span']/../../../../../../../div/div/label/div/input")
+                select_button.click()
+            except:
+                continue
+        country = "japanese"
+        try:
+            time.sleep(random.randint(1,2))
+            dm_open_button = driver.find_element(By.XPATH, "//div[@role='button' and text()='チャット']")
+            dm_open_button.click()
+            time.sleep(random.randint(1,2))
+            # info_button = driver.find_element(By.XPATH, "//div/*[name()='svg' and @aria-label='スレッド情報' and @role='img']/../..")
+            # info_button.click()
+            profile_name = driver.find_element(By.XPATH, "//div[@role='presentation']/div/div/div/span[@dir='auto']/span")
+            
+            country = get_nationality(profile_name.text)
+        except:
+            continue
         
         text_area = driver.find_element(By.XPATH, "//div[@role='textbox' and @spellcheck='true']")
         
@@ -1491,11 +1497,11 @@ if __name__ == '__main__':
         if ac_count > max_like_fol:
             ac_count = 0
         try:
-            flag["dm"] = 0
-            flag["ri"] = 0
-            flag["ml"] = 0
-            flag["rm"] = 0
-            flag["lf"] = 0
+            # flag["dm"] = 0
+            # flag["ri"] = 0
+            # flag["ml"] = 0
+            # flag["rm"] = 0
+            # flag["lf"] = 0
             if p_count == 0:
                 p_count += 1
                 if flag["dm"] == 1:
