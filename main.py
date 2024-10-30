@@ -114,7 +114,11 @@ def like_more_post(driver: WebDriver, user_name, iine_return_kaisuu):
 
             try: # いいねずみだとdivは二つない
                 btn_liked = driver.find_element(By.XPATH, "//div[@role='button']/div/span/*[name()='svg' and @aria-label='いいね！']/../../..")
-                btn_liked.click()
+                try:
+                    driver.execute_script('arguments[0].click();', btn_liked)
+                except:
+                    #traceback.print_exc()
+                    btn_liked.click()
                 iine_kaisuu_num += 1
             except:
                 print(str(j+1) + 'つ目の投稿はいいね済みなのでスキップします')
@@ -362,7 +366,7 @@ def insta_login(driver, myname, password):
     driver.implicitly_wait(10)
 
 
-def tagsearch(driver, tag):
+def tagsearch(driver: WebDriver, tag):
     tag_url = "https://www.instagram.com/explore/tags/{}"
     encodedTag = urllib.parse.quote(tag)    # URLエンコード(日本語、スペース等）
     tag_url = tag_url.format(encodedTag)    # {}を.formatを用いてencodeTagへ置換
@@ -432,7 +436,7 @@ def clickforrow(counter):
     return counter
 
 
-def tag_action(driver=None, ac_count=0, max_follower=5000, wait_time=None):
+def tag_action(driver:WebDriver=None, ac_count=0, max_follower=5000, wait_time=None):
 
     print('---- tag検索からフォローといいねを行います ----')
     now = datetime.datetime.now()
@@ -442,7 +446,13 @@ def tag_action(driver=None, ac_count=0, max_follower=5000, wait_time=None):
     likedCounter = 0
     forrowCounter = 0
     tagsearch(driver, random.choice(taglist))    # taglistからタグを選定し検索
-
+    
+    try:
+        WebDriverWait(driver, 5).until(EC.presence_of_element_located(By.XPATH, "//span[contains(text(), '問題が発生したため、ページを読み込めませんでした。')]"))
+        return
+    except:
+        pass
+    
     # 写真のXPATH
     tag_picture = "//div[@class='_aagu']"
     try:
@@ -458,17 +468,14 @@ def tag_action(driver=None, ac_count=0, max_follower=5000, wait_time=None):
     base_url = driver.current_url
 
     while likedCounter < max_like_fol:
-        # continue用flag
-        flag = 0
         
-        # 写真ページが開かれたかどうか
-        # たまに読み込まれないので最大10回トライする
+        # 写真ページが開かれたかどうか # Check if the photo page was opened
+        # たまに読み込まれないので最大10回トライする # Sometimes it doesn't load, so it will try up to 10 times
         for i in range(0,10):
             try:
                 # 写真開いたページのユーザーネームのあたりのクラスが_aaqt
                 # aはユーザーネームのhrefとかがある要素（位置が変わったので消去）
-                xpath = "//div[@class='_aaqt']"
-                elem = driver.find_element(By.XPATH, xpath)
+                elem = driver.find_element(By.XPATH, "//div[@class='_aaqt']")
                 break
             except:
                 traceback.print_exc()
@@ -488,31 +495,55 @@ def tag_action(driver=None, ac_count=0, max_follower=5000, wait_time=None):
                     print("プロフィールがクリックできませんでした。アクションを行わず次へ進みます。")
                     #flag = 1
                     break
+        try:
+            btn_follow = driver.find_element(By.XPATH, "//div[text()='フォロー']/../../../button")
+            try:
+                driver.execute_script('arguments[0].click();', btn_follow)
+            except:
+                btn_follow.click()
+            print(f"Clicked Follow")
+            forrowCounter = forrowCounter+1
+        except:
+            pass
+        try:
+            btn_liked = driver.find_element(By.XPATH, "//div[@role='button']/div/span/*[name()='svg' and @aria-label='いいね！']/../../..")
+            try:
+                driver.execute_script('arguments[0].click();', btn_liked)
+            except:
+                #traceback.print_exc()
+                btn_liked.click()
+            likedCounter = likedCounter+1
+            print(f"Clicked Like")
+        except:
+            pass
+        
+        time.sleep(random.randint(2,3)) # 最初は2,3秒待つ
+        
+        # # プロフの要素を取得 Get profile elements
+        # prof_class = ".x1i10hfl.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.xdl72j9.x2lah0s.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.x2lwn1j.xeuugli.x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x1lku1pv.x1a2a7pz.x6s0dn4.xjyslct.x1ejq31n.xd10rxx.x1sy0etr.x17r0tee.x9f619.x1ypdohk.x1i0vuye.xwhw2v2.xl56j7k.x17ydfre.x1f6kntn.x2b8uid.xlyipyv.x87ps6o.x14atkfc.x1d5wrs8.x972fbf.xcfux6l.x1qhh985.xm0m39n.xm3z3ea.x1x8b98j.x131883w.x16mih1h.xt7dq6l.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.xjbqb8w.x1n5bzlp.xqnirrm.xj34u2y.x568u83.x3nfvp2"
+        # # フォロワー数を見に行くのに必要 Needed to see the number of followers
+        # elem = driver.find_element(By.CSS_SELECTOR, prof_class)
+        # href = elem.get_attribute("href")
 
-        # プロフの要素を取得
-        prof_class = ".x1i10hfl.xjqpnuy.xa49m3k.xqeqjp1.x2hbi6w.xdl72j9.x2lah0s.xe8uvvx.xdj266r.x11i5rnm.xat24cr.x1mh8g0r.x2lwn1j.xeuugli.x1hl2dhg.xggy1nq.x1ja2u2z.x1t137rt.x1q0g3np.x1lku1pv.x1a2a7pz.x6s0dn4.xjyslct.x1ejq31n.xd10rxx.x1sy0etr.x17r0tee.x9f619.x1ypdohk.x1i0vuye.xwhw2v2.xl56j7k.x17ydfre.x1f6kntn.x2b8uid.xlyipyv.x87ps6o.x14atkfc.x1d5wrs8.x972fbf.xcfux6l.x1qhh985.xm0m39n.xm3z3ea.x1x8b98j.x131883w.x16mih1h.xt7dq6l.xexx8yu.x4uap5.x18d9i69.xkhd6sd.x1n2onr6.xjbqb8w.x1n5bzlp.xqnirrm.xj34u2y.x568u83.x3nfvp2"
-        # フォロワー数を見に行くのに必要
-        elem = driver.find_element(By.CSS_SELECTOR, prof_class)
-        href = elem.get_attribute("href")
-
-        if check_follower(driver, href, max_follower, base_url):
-            likedCounter = clicknice(likedCounter)    # 自動いいね！
-            forrowCounter = clickforrow(forrowCounter)    # 自動フォロー
-        else:
-            likedCounter = clicknice(likedCounter)    # 自動いいね！
-            print(f"フォロワー数が{max_follower}以上のためフォローを行いませんでした。")
+        # if check_follower(driver, href, max_follower, base_url):
+        #     likedCounter = clicknice(likedCounter)    # 自動いいね！
+        #     forrowCounter = clickforrow(forrowCounter)    # 自動フォロー
+        # else:
+        #     likedCounter = clicknice(likedCounter)    # 自動いいね！
+        #     print(f"フォロワー数が{max_follower}以上のためフォローを行いませんでした。")
 
         print("{}秒待機します。".format(wait_time[ac_count]))
-        if not likedCounter == 0:
-            time.sleep(wait_time[ac_count]) # ランダム時間待機後いいね！
-        else:
-            time.sleep(random.randint(2,3)) # 最初は2,3秒待つ
+        time.sleep(wait_time[ac_count]) # ランダム時間待機後いいね！
+        # if not likedCounter == 0:
+        #     time.sleep(wait_time[ac_count]) # ランダム時間待機後いいね！
+        # else:
+        #     time.sleep(random.randint(2,3)) # 最初は2,3秒待つ
 
         ac_count += 1
         if ac_count == max_like_fol - 1:    # 指定回数終了でbreak
             break
         try:    # 次のページへ進む
-            xpath = "//button/div/span/*[name()='svg' and starts-with(@aria-label, '次へ')]/../../.."
+            xpath = "//div/button/div/span/*[name()='svg' and starts-with(@aria-label, '次へ')]/../../.."
             try:
                 driver.execute_script('arguments[0].click();', WebDriverWait(driver, 5).until(EC.element_to_be_clickable((By.XPATH, xpath))))
             except:
@@ -523,7 +554,7 @@ def tag_action(driver=None, ac_count=0, max_follower=5000, wait_time=None):
             print("次に進めなくなりました")
             break
 
-    print(f"{likedCounter}回いいね,{forrowCounter}人フォローをしました。")
+    print(f"{likedCounter}回いいね, {forrowCounter}人フォローをしました。")
     now = datetime.datetime.now()
     print('完了時刻：' + "{}年{}月{}日 {}:{}:{}".format(now.year, now.month, now.day, now.hour, now.minute, now.second))
     print('---- tag検索からのフォローといいねを終了します ----')
@@ -808,20 +839,35 @@ def get_pup_info(driver: WebDriver, rm_list=None, prev_list=[], moji=None):
     # except:
     #     iscr = 1
     # username_path = '//a[contains(@class,"notranslate")]/span/div'
+    
+    btn_list = driver.find_element(By.XPATH, f"//div/a[contains(text(),'{moji}')]")
+    btn_list.click()
+    
     follow_path = '//div[@role="button" and text()="削除"]/../../../div/div/div/div/div/div/a/div/div/span'
     below_track = '//span[contains(text(), "おすすめ")]'
     
-    for _ in range(0, 20):
-        try:
-            end = driver.find_element(By.XPATH, below_track)
-            break
-        except:
-            try:
-                divparent = driver.find_element(By.XPATH, "//div[contains(@class, 'xyi19xy') and contains(@class, 'x1ccrb07') and contains(@class, 'xtf3nb5') and contains(@class, 'x1pc53ja') and contains(@class, 'x1lliihq') and contains('x1iyjqo2') and contains('xs83m0k')]")
-                driver.execute_script("arguments[0].scrollIntoView({ behavior: 'smooth', block: 'end' });", divparent)
-            except:
+    pdev_location = "//div[text()='削除' and @role='button']/../../../../../../../../.."
+    if moji == 'フォロー中':
+        follow_path = '//div[text()="フォロー中"]/../../../button/../../../div/div/div/div/div/div/a/div/div/span'
+        pdev_location = "//div[text()='フォロー中']/../../../button/../../../../../../../../.."
+    try:
+        divparent = driver.find_element(By.XPATH, pdev_location)
+        while True:
+            # Get the current scroll height
+            last_height = driver.execute_script("return arguments[0].scrollHeight;", divparent)
+
+            # Scroll down
+            driver.execute_script("arguments[0].scrollTo(0, arguments[0].scrollHeight);", divparent)
+
+            # Wait for the page to load
+            time.sleep(random.randint(2, 4))
+
+            # Calculate new scroll height and compare with last scroll height
+            new_height = driver.execute_script("return arguments[0].scrollHeight;", divparent)
+            if new_height == last_height:
                 break
-            continue
+    except:
+        pass
     
     elems = driver.find_elements(By.XPATH, follow_path)
     profile_list = []
@@ -1246,9 +1292,6 @@ def get_diff_follower_list(driver: WebDriver = None, myname=None, max_tnk_dm=20)
     
     dsp_pup_list(driver, myname, moji="フォロワー")
 
-    btn_list = driver.find_element(By.XPATH, f"//div/a[contains(text(),'フォロワー')]")
-    btn_list.click()
-    
     return get_pup_info(driver, rm_list=None, prev_list=prev_list, moji="フォロワー") 
 
     # max_num = min(int(max_tnk_dm*1.5), int(num_follower))
@@ -1300,86 +1343,69 @@ def auto_follow(driver: WebDriver):
         try:
             # プロフィールを開く
             driver.get(f"https://www.instagram.com/{user}")
-
-            xpath_posts = "//a[@role='link']"
-            # wait.until(EC.presence_of_element_located((By.XPATH, "//a[@href[starts-with(., '/p/')]]")))
-            wait.until(EC.presence_of_element_located((By.XPATH, xpath_posts)))
-
-            # 投稿のリンクを取得
-            e_posts = driver.find_elements(By.XPATH, xpath_posts)
-            for e in e_posts[:6]:
+            
+            elems = driver.find_elements(By.CLASS_NAME, '_aagv')
+            for elem in elems[:6]:
                 try:
-                    childs = e.find_elements(By.XPATH, ".//*")
-                    if len(childs) == 0:
-                        continue
-                    # 投稿ダイアログを開く
-                    # ActionChains(driver).move_to_element(e).perform()
-                    e.click()
-                    wait.until(EC.presence_of_element_located((By.XPATH, xpath_dialog)))
-                    time.sleep(5)
-                    # 投稿日時を取得
-                    post_date_str = driver.find_element(By.XPATH, xpath_dialog).find_element(By.XPATH, "." + xpath_text_post_time).get_attribute('datetime')
-                    post_date = datetime.datetime.fromisoformat(post_date_str)
-                    hour_diff = (datetime.datetime.now(datetime.timezone.utc) - post_date).total_seconds() / 3600
-                    if hour_diff > SETTING["auto_follow"]["active_period"]:
-                        print(f"ユーザー`@{user}`の投稿が古いためスキップ: {convert_time_to_unit(hour_diff)}前")
-                        # 古い投稿は取得対象外なのでダイアログを閉じる
-                        driver.find_element(By.XPATH, xpath_close_post).click()
-                        wait.until(EC.invisibility_of_element_located((By.XPATH, xpath_dialog)))
-                        continue
-
-                    # いいね一覧を別タブで開く
-                    main_window_handle = driver.current_window_handle
-                    path_like = driver.find_element(By.XPATH, xpath_link_like).get_attribute('href')
-                    driver.execute_script(f"window.open('{path_like}', '_blank');")
-                    new_tab_handle = [handle for handle in driver.window_handles if handle != main_window_handle][0]
-                    driver.switch_to.window(new_tab_handle)
-                    try:
-                        wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
-                        time.sleep(5)
-                        # ユーザーのリストを収集
-                        e_users = driver.find_elements(By.XPATH, xpath_text_user)
-                        e_buttons = driver.find_elements(By.XPATH, xpath_button)
-                        if len(e_users) != len(e_buttons):
-                            print(f"WARN: ユーザーの数とフォローボタンの数が一致しないため、フォロー済みのユーザーも含めて収集します。")
-                            for e_u in e_users:
-                                name = e_u.text.strip()
-                                if name in users:
-                                    users[name] = users[name] + 1
-                                else:
-                                    users[name] = 1
-                        else:
-                            for e_u, e_b in zip(e_users, e_buttons):
-                                btn_text = e_b.text.strip()
-                                if btn_text != text_follow:
-                                    # フォロー済みのユーザーは収集しない
-                                    continue
-                                name = e_u.text.strip()
-                                if name in users:
-                                    users[name] = users[name] + 1
-                                else:
-                                    users[name] = 1
-                        print(f"ユーザー`@{user}`の投稿から{len(e_users)}件のユーザーを取得しました。")
-                    except Exception as e:
-                        print(f"ERROR: ユーザー`@{user}`のいいね一覧の表示と取得に失敗しました。", e)
-                        traceback.print_exc()
-                    finally:
-                        # いいね一覧タブを閉じる
-                        driver.close()
-                        driver.switch_to.window(main_window_handle)
-                    
-                    # 投稿ダイアログを閉じる
-                    driver.find_elements(By.XPATH, xpath_close_post)[0].click()
-                    wait.until(EC.invisibility_of_element_located((By.XPATH, xpath_dialog)))
-                
-                except Exception as e:
-                    print(f"ERROR: ユーザー`@{user}`の投稿の表示に失敗しました。", e)
+                    driver.execute_script('arguments[0].click();', elem)
+                except:
                     traceback.print_exc()
-                    # 開いたダイアログを閉じる
-                    e_close_posts = driver.find_elements(By.XPATH, xpath_close_post)
-                    for e_c in e_close_posts:
-                        e_c.click()
-                        wait.until(EC.invisibility_of_element_located(e_c))
+                    elem.click()
+                time.sleep(random.randint(1,2))
+                    # 投稿日時を取得
+                post_date_str = driver.find_element(By.XPATH, xpath_dialog).find_element(By.XPATH, "." + xpath_text_post_time).get_attribute('datetime')
+                post_date = datetime.datetime.fromisoformat(post_date_str)
+                hour_diff = (datetime.datetime.now(datetime.timezone.utc) - post_date).total_seconds() / 3600
+                if hour_diff > SETTING["auto_follow"]["active_period"]:
+                    print(f"ユーザー`@{user}`の投稿が古いためスキップ: {convert_time_to_unit(hour_diff)}前")
+                    # 古い投稿は取得対象外なのでダイアログを閉じる
+                    driver.find_element(By.XPATH, xpath_close_post).click()
+                    wait.until(EC.invisibility_of_element_located((By.XPATH, xpath_dialog)))
+                    continue
+
+                # いいね一覧を別タブで開く
+                main_window_handle = driver.current_window_handle
+                path_like = driver.find_element(By.XPATH, xpath_link_like).get_attribute('href')
+                driver.execute_script(f"window.open('{path_like}', '_blank');")
+                new_tab_handle = [handle for handle in driver.window_handles if handle != main_window_handle][-1]
+                driver.switch_to.window(new_tab_handle)
+                try:
+                    wait.until(EC.presence_of_element_located((By.TAG_NAME, "main")))
+                    time.sleep(5)
+                    # ユーザーのリストを収集
+                    e_users = driver.find_elements(By.XPATH, xpath_text_user)
+                    e_buttons = driver.find_elements(By.XPATH, xpath_button)
+                    if len(e_users) != len(e_buttons):
+                        print(f"WARN: ユーザーの数とフォローボタンの数が一致しないため、フォロー済みのユーザーも含めて収集します。")
+                        for e_u in e_users:
+                            name = e_u.text.strip()
+                            if name in users:
+                                users[name] = users[name] + 1
+                            else:
+                                users[name] = 1
+                    else:
+                        for e_u, e_b in zip(e_users, e_buttons):
+                            btn_text = e_b.text.strip()
+                            if btn_text != text_follow:
+                                # フォロー済みのユーザーは収集しない
+                                continue
+                            name = e_u.text.strip()
+                            if name in users:
+                                users[name] = users[name] + 1
+                            else:
+                                users[name] = 1
+                    print(f"ユーザー`@{user}`の投稿から{len(e_users)}件のユーザーを取得しました。")
+                except Exception as e:
+                    print(f"ERROR: ユーザー`@{user}`のいいね一覧の表示と取得に失敗しました。", e)
+                    traceback.print_exc()
+                finally:
+                    # いいね一覧タブを閉じる
+                    driver.close()
+                    driver.switch_to.window(main_window_handle)
+                
+                # 投稿ダイアログを閉じる
+                driver.find_elements(By.XPATH, xpath_close_post)[0].click()
+                wait.until(EC.invisibility_of_element_located((By.XPATH, xpath_dialog)))
                     
         except Exception as e:
             print(f"ERROR: ユーザー`@{user}`へいいねしてるユーザーの取得に失敗しました:", e)
@@ -1445,7 +1471,7 @@ if __name__ == '__main__':
     driver = get_webdriver(stealth_mode=1, ostype="win", use_profile=1)
 
     # 指定時間内にCounter_Maxの数だけランダム時間を生成
-    wait_time = time_management(max_like_fol+400, interval)    
+    wait_time = time_management(max_like_fol+10, interval)    
 
     # 何回目のログインか
     global n_login
@@ -1465,6 +1491,11 @@ if __name__ == '__main__':
         if ac_count > max_like_fol:
             ac_count = 0
         try:
+            flag["dm"] = 0
+            flag["ri"] = 0
+            flag["ml"] = 0
+            flag["rm"] = 0
+            flag["lf"] = 0
             if p_count == 0:
                 p_count += 1
                 if flag["dm"] == 1:
