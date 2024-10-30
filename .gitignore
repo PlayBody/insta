@@ -7,4 +7,4 @@ error.html
 error.png
 build
 dist
-
+*.csv
