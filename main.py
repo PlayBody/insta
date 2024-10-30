@@ -732,7 +732,7 @@ def get_follower_from_notice(driver):
 
     # 過去取得済みのフォロワーのリストを取得
     try:
-        with open(FILE_NAME, 'r') as file:
+        with open(FILE_NAME, 'r', encoding='utf-8') as file:
             saved_followers = [line.rstrip() for line in file]
     except:
         saved_followers = []
@@ -763,7 +763,7 @@ def get_follower_from_notice(driver):
             break
 
     # 今回出力されるフォロワーのリストを保存する
-    with open(FILE_NAME, 'a') as file:
+    with open(FILE_NAME, 'a', encoding='utf-8') as file:
         for f in followers:
             file.write(f + "\n")
 
