@@ -15,7 +15,7 @@ def get_setting():
     taglist = ["相互フォロー", "相互フォロー", "相互フォロー"]
 
     try:
-        with open('./insta2.json', 'r', encoding='utf-8') as f:
+        with open('./insta2.json') as f:
             setting = json.load(f)
     except:
         setting = {
@@ -57,7 +57,7 @@ def get_setting():
     # ウィンドウを作成
     win = tk.Tk()
     win.title('インスタ自動運用設定画面 (Insta Auto Operation Settings Screen)')
-    win.geometry('700x700')
+    win.geometry('800x420')
 
     frame_base_grid = tk.Frame(win)
     frame_base_grid.pack()
