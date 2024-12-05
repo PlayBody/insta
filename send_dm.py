@@ -36,7 +36,7 @@ def save_followers(followers, file_path='followers_list.json'):
     """
     Saves the list of current followers to a JSON file.
     """
-    with open(file_path, 'w') as file:
+    with open(file_path, 'w', "utf-8") as file:
         json.dump(followers, file)
         print("Followers list has been saved.")
 
@@ -46,7 +46,7 @@ def load_previous_followers(file_path='followers_list.json'):
     If the file doesn't exist, returns an empty list.
     """
     if os.path.exists(file_path):
-        with open(file_path, 'r') as file:
+        with open(file_path, 'r', "utf-8") as file:
             try:
                 return json.load(file)
             except json.JSONDecodeError:

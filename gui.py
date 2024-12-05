@@ -15,7 +15,7 @@ def get_setting():
     taglist = ["相互フォロー", "相互フォロー", "相互フォロー"]
 
     try:
-        with open('./insta2.json') as f:
+        with open('./insta2.json', "r", encoding="utf-8") as f:
             setting = json.load(f)
     except:
         setting = {

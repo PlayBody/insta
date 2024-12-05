@@ -39,7 +39,7 @@ def auto_follow(driver: WebDriver , myname , max_follow_limit, dm_flag):
         users = {user: 0 for user in fetched_followers}  # Initialize as a dictionary with weight 0
         top_users = get_top_users(users, max_follow_limit)
     else: 
-        with open('followers_list.json', "r") as f:
+        with open('followers_list.json', "r", encoding="utf-8") as f:
             # Convert the list of users into a dictionary with weight 0
             fetched_followers = json.load(f)
             users = {user: 0 for user in fetched_followers}  # Initialize as a dictionary with weight 0
